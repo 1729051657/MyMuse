@@ -261,7 +261,7 @@ class AccountManager:
                 raise Refused(
                     503,
                     "web_full",
-                    "Every place in the web version is taken. Install the app instead — it runs on your own device.",
+                    "Account capacity is full. Contact the service operator.",
                 )
             account = Account(
                 id=account_id,
@@ -326,11 +326,12 @@ class AccountManager:
             if len(running) >= self.s.web_max_running:
                 # put the quietest one to sleep to make room
                 quietest = min(running, key=lambda a: a.last_seen)
-                if self.clock() - quietest.last_seen < 300:
+                # Zero keeps background work running, including when another account arrives.
+                if self.s.web_idle_stop_s == 0 or self.clock() - quietest.last_seen < 300:
                     raise Refused(
                         503,
                         "web_busy",
-                        "The web version is busy right now. Try again in a few minutes, or install the app.",
+                        "Running capacity is full. Try later or contact the service operator.",
                     )
                 await self._stop(quietest)
             try:
@@ -432,6 +433,8 @@ class AccountManager:
         log.info("web: %d accounts, %d up", self.store.count(), len(self.live))
 
     async def reap_once(self) -> None:
+        if self.s.web_idle_stop_s == 0:
+            return
         now = self.clock()
         for a in list(self.live.values()):
             if a.running and now - a.last_seen >= self.s.web_idle_stop_s:

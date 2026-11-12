@@ -238,6 +238,7 @@ for the full list. The ones that matter:
 | `GITHUB_COLLECT` | `1` | `0` turns the collector off (a relay without a way out, tests) |
 | `GITHUB_API` | `https://api.github.com` | where the collector reads; a mirror for a relay that cannot reach GitHub |
 | `ADMIN_EMAIL` | empty | where a threshold rule's *notify* goes (0.22, *Controls*), through the `SMTP_*` settings; empty = the rule writes its audit line and the log says there was nobody to tell |
+| `SERVICE_NAME` | `nanoMuse` | name shown in verification e-mails; their service link uses `PUBLIC_BASE` |
 | `NANOMUSE_CLOUD_BASE` | `PUBLIC_BASE`, else `http://127.0.0.1:8787` | read by the admin CLI only (`nanomuse-cloud admin …`, below): the address of the relay it talks to when `--base` is not given; the relay itself does not read it |
 
 The hosted menu contains one model: `Qwen/Qwen3.6-27B-FP8`. It serves both

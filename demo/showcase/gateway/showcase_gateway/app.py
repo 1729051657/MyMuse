@@ -440,6 +440,18 @@ def create_app(
     async def web_info() -> dict[str, Any]:
         return {"version": __version__, **accounts.stats()}
 
+    @app.get("/api/web/tls", include_in_schema=False)
+    async def web_tls(domain: str = "") -> Response:
+        """Caddy may obtain a certificate only for a registered account's hostname."""
+        suffix = "." + settings.session_domain
+        slug = domain.removesuffix(suffix)
+        allowed = (
+            settings.web_enabled
+            and domain.endswith(suffix)
+            and accounts.store.by_slug(slug) is not None
+        )
+        return Response(status_code=204 if allowed else 403)
+
     @app.post("/api/web/code", status_code=204)
     async def web_code(body: WebCodeIn, request: Request) -> Response:
         try:

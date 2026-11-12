@@ -772,6 +772,38 @@ def test_hosted_runtime_starts_signed_in_from_the_environment(
         assert relay.hello["device"]["name"] == "Web"
 
 
+@pytest.mark.parametrize("cloud_model", [True, False])
+def test_hosted_reauthentication_refreshes_the_saved_key_and_keeps_model_choice(
+    settings: Settings, relay: FakeRelay, monkeypatch: pytest.MonkeyPatch, cloud_model: bool
+) -> None:
+    from nanomuse.cloud import CLOUD_KEY
+
+    settings.cloud.base_url = relay.base_url
+    settings.llm.provider = "openai"
+    settings.llm.model = "saved-model"
+    settings.llm.tool_mode = "native"
+    settings.llm.base_url = (
+        model_url(relay.base_url) if cloud_model else "https://models.example.com/v1"
+    )
+    settings.llm.api_key = "{{vault:" + CLOUD_KEY + "}}" if cloud_model else "own-model-key"
+    service = MuseService(settings, llm=MockLLM([]))
+    service.app.vault.set(CLOUD_KEY, "expired-session")
+    old_model = service.app.llm
+    monkeypatch.setenv("NANOMUSE_CLOUD_KEY", "test-key")
+
+    asyncio.run(service.hub._seed_from_env())
+
+    assert service.app.vault.get(CLOUD_KEY) == "test-key"
+    assert service.hub.cloud.api_key == "test-key"
+    assert settings.llm.model == "saved-model"
+    if cloud_model:
+        assert service.app.llm is not old_model
+        assert service.app.llm.client.api_key == "test-key"
+    else:
+        assert service.app.llm is old_model
+        assert settings.llm.api_key == "own-model-key"
+
+
 def test_a_signed_in_runtime_with_no_model_key_makes_the_relay_its_model(
     settings: Settings, relay: FakeRelay, monkeypatch: pytest.MonkeyPatch
 ) -> None:

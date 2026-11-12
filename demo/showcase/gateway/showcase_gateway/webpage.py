@@ -1,6 +1,6 @@
-"""The sign-in page of nanoMuse Web (``/web/``), one file, in both languages.
+"""The MyMuse sign-in page (``/web/``), in English and Simplified Chinese.
 
-Two steps: a phone number or an e-mail address, then the six-digit code nanoMuse Cloud sends
+Two steps: an e-mail address, then the six-digit code the account service sends
 (and, the first time, a friend's invite code if there is one — ``?invite=`` in the address
 fills it in); or, for an account that set one, the password in one step. On success the
 browser goes to the account's own Muse at ``<slug>.<SESSION_DOMAIN>``. The page
@@ -18,9 +18,9 @@ PAGE = """<!doctype html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>nanoMuse Web</title>
-<meta name="description" content="nanoMuse in the browser — sign in with a phone number or an e-mail, nothing to install. Free, open source, non-profit.">
-<link rel="icon" href="https://nanomuse.cn/assets/icon-512.png">
+<title>MyMuse</title>
+<meta name="description" content="Your personal cloud assistant. Sign in with an e-mail to work with files, browse the web and keep your tasks together.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%235B4EE6'/%3E%3Ctext x='32' y='45' text-anchor='middle' font-family='system-ui' font-size='40' fill='white'%3EM%3C/text%3E%3C/svg%3E">
 <script>try{var t=localStorage.getItem("nanomuse_theme")||"light";if(t==="system")t=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";document.documentElement.dataset.theme=t}catch(e){}</script>
 <style>
 :root{--bg:#F3F3F5;--card:#fff;--ink:#1C1B22;--muted:#6E6B7A;--line:#E4E3EA;--accent:#5B4EE6;--accent-ink:#fff;--warn:#B23B3B}
@@ -37,7 +37,7 @@ main{min-height:100dvh;display:flex;align-items:center;justify-content:center;pa
 .perks svg{flex:none;width:16px;height:16px;color:var(--accent);margin-top:1px}
 .more{order:3}
 .brand{display:flex;align-items:center;gap:12px;margin-bottom:18px}
-.brand img{width:44px;height:44px;border-radius:12px}
+.brand-icon{display:grid;place-items:center;width:44px;height:44px;border-radius:12px;background:var(--accent);color:var(--accent-ink);font-size:26px;font-weight:700}
 .brand b{font-size:20px;letter-spacing:-.01em}
 .brand small{display:block;color:var(--muted);font-size:13px;margin-top:1px}
 h1{font-size:22px;margin:0 0 6px;letter-spacing:-.01em}
@@ -94,17 +94,17 @@ i.en,i.zh{font-style:normal}
 <main>
 <div class="page">
   <section class="words">
-    <div class="brand"><img src="https://nanomuse.cn/assets/icon-512.png" alt=""><div><b>nanoMuse Web</b>
+    <div class="brand"><span class="brand-icon" aria-hidden="true">M</span><div><b>MyMuse</b>
     <small><i class="zh">打开网页就能用，不用下载</i><i class="en">In the browser, nothing to install</i></small></div></div>
-    <h1 class="title"><i class="zh">试试 nanoMuse</i><i class="en">Try nanoMuse</i></h1>
-    <p><i class="zh">手机号或邮箱收个验证码，一分钟后就有一台属于你的 nanoMuse，模型自带。</i><i class="en">A phone number or an e-mail, a code, and a minute later a nanoMuse of your own is here, model included.</i></p>
+    <h1 class="title"><i class="zh">你的云端助手</i><i class="en">Your personal cloud assistant</i></h1>
+    <p><i class="zh">整理资料、处理文件、浏览网页。用邮箱注册，让助手在自己的工作区里帮你完成任务。</i><i class="en">Organize information, work with files and browse the web. Sign up with an e-mail and give your assistant a workspace of its own.</i></p>
   </section>
 
   <ul class="perks">
     <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h8"/><path d="M10 19v-3.96 3.15"/><path d="M7 19h5"/><rect width="6" height="10" x="16" y="12" rx="2"/></svg><span><i class="zh">不用下载，打开浏览器就能用</i><i class="en">Nothing to install — it opens in the browser</i></span></li>
-    <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg><span><i class="zh">自带模型和免费额度，也可以换自己的 key</i><i class="en">A model with a free allowance, or your own key</i></span></li>
-    <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg><span><i class="zh">一直保存着，下次登录还在</i><i class="en">It keeps everything for your next visit</i></span></li>
-    <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg><span><i class="zh">同一个账号，手机和电脑上就是同一个 nanoMuse</i><i class="en">The same account on the phone and the desktop is the same nanoMuse</i></span></li>
+    <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg><span><i class="zh">使用账号的模型额度，也可以配置自己的 key</i><i class="en">Use your account's model allowance or configure your own key</i></span></li>
+    <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg><span><i class="zh">文件和记忆保存在你的工作区，下次登录继续</i><i class="en">Keep files and memories in your workspace for your next visit</i></span></li>
+    <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg><span><i class="zh">删除、发送和付款等操作先征求你的同意</i><i class="en">Approve actions such as deleting, sending and paying before they run</i></span></li>
   </ul>
 
   <section class="card">
@@ -113,20 +113,20 @@ i.en,i.zh{font-style:normal}
       <button type="button" class="tab on" id="tab-code" role="tab" aria-selected="true"><i class="zh">验证码登录</i><i class="en">With a code</i></button>
       <button type="button" class="tab" id="tab-pass" role="tab" aria-selected="false"><i class="zh">密码登录</i><i class="en">With a password</i></button>
     </div>
-    <label for="ident"><i class="zh">中国大陆手机号或邮箱</i><i class="en">Mainland China phone number or e-mail</i></label>
-    <input id="ident" name="identifier" autocomplete="username" required autofocus>
+    <label for="ident"><i class="zh">邮箱</i><i class="en">E-mail address</i></label>
+    <input id="ident" name="identifier" type="email" autocomplete="username" required autofocus>
     <div id="pass-box" class="hidden">
       <label for="password"><i class="zh">密码</i><i class="en">Password</i></label>
       <input id="password" name="password" type="password" autocomplete="current-password">
       <div class="hint"><i class="zh">还没有密码？先用验证码登录，再在「账号」里设一个。</i><i class="en">No password yet? Sign in with a code first, then set one under Account.</i></div>
     </div>
-    <div class="hint" id="code-hint"><i class="zh">中国大陆手机号收短信验证码，其他的发到邮箱。</i><i class="en">A mainland China number gets the code by SMS; anything else by e-mail.</i></div>
+    <div class="hint" id="code-hint"><i class="zh">首次验证会创建账号；已有账号验证后直接登录。</i><i class="en">Your first code creates an account. Use a code to return to an existing account.</i></div>
     <details class="inv" id="inv">
       <summary><i class="zh">有邀请码？</i><i class="en">Have an invite code?</i></summary>
       <input id="invite" name="invite" maxlength="8" autocomplete="off" spellcheck="false" placeholder="ABCD2345">
     </details>
     <button id="send" type="submit"><i class="zh">发送验证码</i><i class="en">Send the code</i></button>
-    <button id="login" type="submit" class="hidden"><i class="zh">进入我的 nanoMuse</i><i class="en">Open my nanoMuse</i></button>
+    <button id="login" type="submit" class="hidden"><i class="zh">进入 MyMuse</i><i class="en">Open MyMuse</i></button>
     <div class="msg" id="msg1"></div>
   </form>
 
@@ -135,7 +135,7 @@ i.en,i.zh{font-style:normal}
     <p><i class="zh">六位数字已发到 </i><i class="en">Six digits were sent to </i><b id="to"></b></p>
     <label for="code"><i class="zh">验证码</i><i class="en">Code</i></label>
     <input id="code" class="code" name="code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" required>
-    <button id="go" type="submit"><i class="zh">进入我的 nanoMuse</i><i class="en">Open my nanoMuse</i></button>
+    <button id="go" type="submit"><i class="zh">进入 MyMuse</i><i class="en">Open MyMuse</i></button>
     <button id="back" class="ghost" type="button"><i class="zh">换个账号</i><i class="en">Use another account</i></button>
     <div class="msg" id="msg2"></div>
   </form>
@@ -143,20 +143,20 @@ i.en,i.zh{font-style:normal}
 
   <section class="more">
   <div class="notice tip">
-    <b><i class="zh">浏览器版适合先试一试</i><i class="en">The browser version is for a first try</i></b>
-    <i class="zh">要天天用，推荐装手机 App——功能最全，智能体整个跑在手机上；电脑上装桌面版。同一个账号登录，就是同一个 nanoMuse。<a href="https://nanomuse.cn/#download">下载手机 App 和桌面版</a></i>
-    <i class="en">For every day, install the phone app — the fullest, the whole agent runs on the phone — and the desktop app on your computer. The same account is the same nanoMuse everywhere. <a href="https://nanomuse.cn/#download">Get the phone and desktop apps</a></i>
+    <b><i class="zh">从一件具体的事开始</i><i class="en">Start with one specific task</i></b>
+    <i class="zh">上传文件让助手整理，或提供网页链接让它收集资料。需要操作你的电脑或手机时，先在相应设备安装并连接客户端。</i>
+    <i class="en">Upload a file to organize, or share a web link to research. To work on your computer or phone, first install and connect a client on that device.</i>
   </div>
   <div class="notice">
-    <b><a href="https://nanomuse.cn/#open-source" rel="noopener"><i class="zh">免费、开源、非营利</i><i class="en">Free, open source, non-profit</i></a></b>
-    <i class="zh">每个账号都有一份由开发者承担的免费模型额度，用完换自己的 key：中国大陆用阿里云百炼，海外用 OpenRouter。登录后，对话文字会保存在 nanoMuse Cloud，让你的几台设备看到同样的对话——「数据控制」里一个开关就能关掉；数据不会出售。</i>
-    <i class="en">Every account starts with an allowance of model use paid by the developer; after that, your own key — Alibaba Cloud Bailian in mainland China, OpenRouter elsewhere. With an account, the text of your conversations is kept on nanoMuse Cloud so that your devices show the same chats — a switch in Data controls turns it off; nothing is sold.</i>
-    <br><a href="https://github.com/nano-muse/nanoMuse" rel="noopener"><i class="zh">GitHub</i><i class="en">GitHub</i></a><a href="https://nanomuse.cn/own-key" rel="noopener"><i class="zh">换自己的 key</i><i class="en">Bring your own key</i></a>
+    <b><i class="zh">账号与数据</i><i class="en">Your account and data</i></b>
+    <i class="zh">账号、文件、记忆和任务保存在本服务的服务器上。模型请求发送至服务配置的模型服务商。对话同步与数据共享偏好可在「数据控制」中管理。</i>
+    <i class="en">This service stores your account, files, memories and tasks on its servers. Model requests go to the configured model provider. Manage conversation sync and data-sharing preferences under Data controls.</i>
+    <br><a href="/privacy"><i class="zh">数据说明</i><i class="en">Data information</i></a>
+    <a href="https://github.com/1729051657/MyMuse" rel="noopener"><i class="zh">源代码</i><i class="en">Source code</i></a>
   </div>
   <div class="foot">
-    <i class="zh">你的 nanoMuse 运行在我们的服务器上，数据只有你能访问；长时间不用会休眠，登录即唤醒。</i>
-    <i class="en">Your nanoMuse runs on our server and only you can reach it; it sleeps after a long quiet spell and wakes when you sign in.</i>
-    <br><i class="zh">nanoMuse 是社区项目，与 Meta 无关。</i><i class="en">nanoMuse is a community project, not affiliated with Meta.</i>
+    <i class="zh">MyMuse 基于 nanoMuse 开源项目构建，遵循 GPL-3.0-or-later 许可证，与 Meta 无关联。</i>
+    <i class="en">MyMuse is built on nanoMuse under GPL-3.0-or-later and is not affiliated with Meta.</i>
   </div>
   </section>
 </div>
@@ -190,8 +190,6 @@ i.en,i.zh{font-style:normal}
   }
   tabCode.onclick = function(){ setMode("code"); };
   tabPass.onclick = function(){ setMode("password"); };
-  // digits get the phone keypad, anything else the e-mail layout
-  ident.oninput = function(){ ident.inputMode = /^\\s*[+\\d]/.test(ident.value) ? "tel" : "email"; };
   function cleanInvite(v){ return (v || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8); }
   try {
     var fromUrl = cleanInvite(new URLSearchParams(location.search).get("invite"));
@@ -199,7 +197,7 @@ i.en,i.zh{font-style:normal}
   } catch (e) {}
   var T = {
     sending: ["正在发送…", "Sending…"], sent: ["已发送", "Sent"],
-    starting: ["正在准备你的 nanoMuse，第一次大约需要十几秒…", "Getting your nanoMuse ready — the first time takes ten seconds or so…"],
+    starting: ["正在准备你的 MyMuse，请稍候…", "Getting your MyMuse ready, please wait…"],
     ready: ["好了，正在进入…", "Ready, opening…"],
     network: ["网络不通，请稍后再试。", "Could not reach the server. Try again in a moment."]
   };
@@ -210,10 +208,10 @@ i.en,i.zh{font-style:normal}
     code_wrong: "验证码不对。", code_expired: "验证码已过期，请重新发送。", code_too_often: "发送太频繁了，请几分钟后再试。",
     send_failed: "验证码没发出去，请稍后再试。", not_invited: "这个 relay 是私有的，这个账号不在名单上。",
     bad_credentials: "账号和密码不匹配。", no_password: "这个账号还没设密码，先用验证码登录，再在「账号」里设一个。", locked: "密码错得太多次了，请稍后再试，或改用验证码登录。",
-    web_off: "这里没有开启网页版。", web_full: "网页版的名额已满。装 App 吧，它跑在你自己的设备上。",
-    web_busy: "网页版现在很忙，请几分钟后再试，或者装 App。", start_failed: "没能启动你的 Muse，请稍后再试。",
+    web_off: "这里没有开启网页版。", web_full: "当前注册名额已满，请联系服务运营者。",
+    web_busy: "当前运行容量已满，请稍后重试或联系服务运营者。", start_failed: "没能启动你的 MyMuse，请稍后再试。",
     start_timeout: "你的 Muse 启动太久了，请稍后再试。", sign_in_again: "登录已失效，请重新登录。",
-    relay_error: "nanoMuse Cloud 没有返回 key，请稍后再试。", relay_unreachable: "连不上 nanoMuse Cloud，请稍后再试。"
+    relay_error: "账号服务没有返回凭据，请稍后再试。", relay_unreachable: "连不上账号服务，请稍后再试。"
   };
   function errText(r){ return (zh && E[r.body.error]) || r.body.message || ("HTTP " + r.status); }
   function show(el, text, err){ el.textContent = text || ""; el.className = "msg" + (err ? " err" : ""); }

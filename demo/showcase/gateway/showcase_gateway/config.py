@@ -178,7 +178,7 @@ class Settings:
     web_image: str  # "" → the showcase image
     web_max_accounts: int
     web_max_running: int
-    web_idle_stop_s: int
+    web_idle_stop_s: int  # 0 keeps containers running, without idle or capacity eviction
     web_key_ttl_s: (
         int  # how long the key a container is started with lives (the relay's session key)
     )

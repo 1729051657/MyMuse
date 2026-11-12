@@ -4,6 +4,12 @@ All notable changes to nanoMuse. The format follows [Keep a Changelog](https://k
 
 ## [Unreleased]
 
+- Added the MyMuse e-mail registration page and a self-hosted Compose stack with a relay, per-account browser assistants and account-scoped HTTPS certificates, without the simulated phone.
+- Added always-on web assistants through `WEB_IDLE_STOP_S=0`, preserving existing assistants when running capacity is full.
+- Made verification e-mails use the self-hosted service's configured name and address.
+- Refreshed hosted assistants' persisted relay credentials after signing in again, preserving the selected model and personal model keys.
+- Limited Docker inspection to containers so first-time registration works through the restricted socket proxy.
+
 - Prevented failed coding runs from retrying in a new conversation after a tool had already started or returned a result.
 
 - Preserved desktop device-chat drafts edited while a send request was awaiting its response. For #815.

@@ -1,0 +1,160 @@
+name: ${COMPOSE_PROJECT_NAME:-mymuse}
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "20m"
+    max-file: "3"
+
+services:
+  # Build this image before starting the gateway. Each account gets its own container.
+  runtime:
+    profiles: [build]
+    image: ${MYMUSE_RUNTIME_IMAGE:-mymuse-runtime:local}
+    build:
+      context: ../..
+      args:
+        WITH_BROWSER: "1"
+
+  relay:
+    build: ../../cloud
+    restart: unless-stopped
+    logging: *logging
+    environment:
+      CLOUD_SECRET: ${CLOUD_SECRET:?Set CLOUD_SECRET in .env}
+      CLOUD_ADMIN_TOKEN: ${CLOUD_ADMIN_TOKEN:?Set CLOUD_ADMIN_TOKEN in .env}
+      SERVICE_NAME: MyMuse
+      PUBLIC_BASE: ${PUBLIC_SCHEME:-https}://${SITE_HOST:?Set SITE_HOST in .env}${PUBLIC_PORT:-}
+      INVITE_URL: ${PUBLIC_SCHEME:-https}://${SITE_HOST}${PUBLIC_PORT:-}/web/?invite=
+      PRIVACY_URL: ${PUBLIC_SCHEME:-https}://${SITE_HOST}${PUBLIC_PORT:-}/privacy
+      REPO_URL: https://github.com/1729051657/MyMuse
+      UPSTREAM_BASE: ${UPSTREAM_BASE:?Set UPSTREAM_BASE in .env}
+      UPSTREAM_KEY: ${UPSTREAM_KEY:?Set UPSTREAM_KEY in .env}
+      CLOUD_MODELS: ${CLOUD_MODELS:?Set CLOUD_MODELS in .env}
+      CHAT_DEFAULTS: ${CHAT_DEFAULTS:-{}}
+      CLOUD_CATALOG: "0"
+      CLOUD_ANY_MODEL_MEMBERS: "0"
+      SIGNUP_OPEN: ${SIGNUP_OPEN:-1}
+      ALLOWED_IDENTIFIERS: ${ALLOWED_IDENTIFIERS:-}
+      ALLOWANCE_CNY: ${ALLOWANCE_CNY:-10}
+      INVITE_BONUS_CNY: "0"
+      PER_MINUTE_REQUESTS: ${PER_MINUTE_REQUESTS:-30}
+      CODE_SENDER: ${CODE_SENDER:-smtp}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-465}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-MyMuse <no-reply@example.com>}
+      IMPROVE_DEFAULT: "0"
+      RECORD_TURNS: "0"
+      CLOUD_GEOIP: "0"
+      GITHUB_COLLECT: "0"
+      WEB_INFO_URL: http://gateway:8000/api/web/info
+      TRUSTED_PROXIES: ${MYMUSE_EDGE_SUBNET:-172.30.80.0/24}
+    volumes:
+      - relay-data:/srv/nanomuse-cloud/data
+    networks:
+      edge:
+        aliases: [relay-auth]
+      web: {}
+
+  gateway:
+    build: ../../demo/showcase/gateway
+    restart: unless-stopped
+    logging: *logging
+    environment:
+      SITE_HOST: ${SITE_HOST}
+      SESSION_DOMAIN: ${SESSION_DOMAIN:?Set SESSION_DOMAIN in .env}
+      PUBLIC_SCHEME: ${PUBLIC_SCHEME:-https}
+      PUBLIC_PORT: ${PUBLIC_PORT:-}
+      INTERNAL_URL: http://gateway:8000
+      DOCKER_HOST: tcp://docker-proxy:2375
+      TRUSTED_PROXIES: caddy
+      WEB_ENABLED: "1"
+      WEB_DB: /data/web.db
+      WEB_RELAY_URL: http://relay-auth:8787
+      WEB_RELAY_INTERNAL_URL: http://relay:8787
+      WEB_NETWORK: ${COMPOSE_PROJECT_NAME:-mymuse}-web
+      WEB_IMAGE: ${MYMUSE_RUNTIME_IMAGE:-mymuse-runtime:local}
+      WEB_SLUG_SALT: ${WEB_SLUG_SALT:?Set WEB_SLUG_SALT in .env}
+      WEB_DEVICE_NAME: MyMuse Web
+      WEB_MAX_ACCOUNTS: ${WEB_MAX_ACCOUNTS:-4}
+      WEB_MAX_RUNNING: ${WEB_MAX_RUNNING:-4}
+      WEB_IDLE_STOP_S: "0"
+      WEB_CONTAINER_MEMORY: ${WEB_CONTAINER_MEMORY:-1g}
+      WEB_CONTAINER_CPUS: ${WEB_CONTAINER_CPUS:-1}
+      START_TIMEOUT_S: "120"
+      TRIAL_ENABLED: "0"
+      DEMO_SIGNIN_REQUIRED: "0"
+      BYOK_ENABLED: "0"
+      MAX_SESSIONS: "0"
+    volumes:
+      - gateway-data:/data
+    networks: [edge, web, control]
+    depends_on:
+      relay:
+        condition: service_healthy
+      docker-proxy:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/web/info', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  docker-proxy:
+    image: tecnativa/docker-socket-proxy:0.3
+    restart: unless-stopped
+    logging: *logging
+    environment:
+      CONTAINERS: "1"
+      POST: "1"
+      NETWORKS: "1"
+      LOG_LEVEL: warning
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks: [control]
+    healthcheck:
+      test: [CMD, wget, -q, -O, /dev/null, http://127.0.0.1:2375/_ping]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    logging: *logging
+    ports:
+      - "${HTTP_BIND:-0.0.0.0}:${HTTP_PORT:-80}:80"
+      - "${HTTPS_BIND:-0.0.0.0}:${HTTPS_PORT:-443}:443"
+    environment:
+      SITE_HOST: ${SITE_HOST}
+      SESSION_DOMAIN: ${SESSION_DOMAIN}
+      ACME_EMAIL: ${ACME_EMAIL:-}
+    volumes:
+      - ./${CADDY_CONFIG:-Caddyfile}:/etc/caddy/Caddyfile:ro
+      - ./routes.caddy:/etc/caddy/routes.caddy:ro
+      - ./privacy.html:/srv/privacy.html:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    networks: [edge]
+    depends_on:
+      gateway:
+        condition: service_healthy
+
+networks:
+  # Only Caddy and the gateway may forward a visitor address to the relay.
+  edge:
+    ipam:
+      config:
+        - subnet: ${MYMUSE_EDGE_SUBNET:-172.30.80.0/24}
+  control:
+    internal: true
+  web:
+    name: ${COMPOSE_PROJECT_NAME:-mymuse}-web
+
+volumes:
+  relay-data: {}
+  gateway-data: {}
+  caddy-data: {}
+  caddy-config: {}

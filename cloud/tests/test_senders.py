@@ -183,6 +183,28 @@ def test_the_code_mail_states_the_lifetime_in_whole_minutes_like_the_sms(monkeyp
     assert json.loads(sms.params(parse("13800138000"), "482913")["TemplateParam"]) == {"code": "482913", "min": "1"}
 
 
+def test_self_hosted_code_mail_uses_the_service_name_and_address(monkeypatch):
+    sent = []
+    monkeypatch.setattr(senders, "smtp_send", lambda s, msg: sent.append(msg))
+    mail = SmtpSender(
+        aliyun_settings(
+            sender="smtp",
+            smtp_host="smtp.test",
+            smtp_from="no-reply@example.com",
+            service_name="MyMuse",
+            public_base="https://muse.example.com",
+        )
+    )
+    mail.send(parse("dev-a@example.com"), "482913")
+    message = sent[0]
+    assert message["From"] == "MyMuse <no-reply@example.com>"
+    assert "Your MyMuse code" in message["Subject"]
+    for content_type in ("plain", "html"):
+        content = message.get_body((content_type,)).get_content()
+        assert "MyMuse" in content and "https://muse.example.com" in content
+        assert "nanomuse.cn" not in content
+
+
 def test_unknown_api_and_missing_settings_are_refused_at_startup():
     with pytest.raises(ValueError):
         AliyunSmsSender(aliyun_settings(aliyun_sms_api="carrier-pigeon"))

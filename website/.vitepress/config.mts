@@ -101,6 +101,7 @@ const useIt: DefaultTheme.SidebarItem[] = [
 ]
 
 const runIt: DefaultTheme.SidebarItem[] = [
+  { text: 'Run MyMuse for your users', link: '/mymuse' },
   { text: 'Run nanoMuse yourself', link: '/self-hosting' },
   { text: 'The runtime in Docker', link: '/deployment' },
   { text: 'Configuration', link: '/configuration' },
@@ -163,6 +164,7 @@ const zhUseIt: DefaultTheme.SidebarItem[] = [
 ]
 
 const zhRunIt: DefaultTheme.SidebarItem[] = [
+  { text: '部署 MyMuse 用户服务', link: '/zh/mymuse' },
   { text: '自己运行 nanoMuse', link: '/zh/self-hosting' },
   { text: '用 Docker 部署运行时', link: '/zh/deployment' },
   { text: '配置', link: '/zh/configuration' },

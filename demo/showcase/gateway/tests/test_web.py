@@ -54,7 +54,7 @@ async def test_the_page_and_a_first_sign_in(web):
     async with app.router.lifespan_context(app):
         c = await client_for(app)
         r = await c.get("/web/")
-        assert r.status_code == 200 and "nanoMuse Web" in r.text and "/api/web/verify" in r.text
+        assert r.status_code == 200 and "MyMuse" in r.text and "/api/web/verify" in r.text
         r = await c.get("/web", follow_redirects=False)
         assert r.status_code == 308 and r.headers["location"] == "/web/"
 
@@ -173,6 +173,51 @@ async def test_coming_back_wakes_the_same_muse(web):
         assert runner.kept[name]["env"]["NANOMUSE_CLOUD_KEY"] == "nm_sess2"
         assert runner.kept[name]["starts"] == 1  # a new container
         assert upstream.revoked == ["nm_key1", "nm_key2"]
+
+
+async def test_always_on_keeps_an_idle_assistant_running(web):
+    settings, runner, upstream, clock, accounts, app = web
+    accounts.s = replace(settings, web_idle_stop_s=0)
+    async with app.router.lifespan_context(app):
+        async with await client_for(app) as client:
+            me = body(await sign_in(client, "someone@example.com"))
+            clock.now += 7 * 86400
+            await accounts.reap_once()
+            kept = runner.kept[f"nmw-{me['slug']}"]
+            assert kept["running"] is True and kept["starts"] == 1
+            assert accounts.stats()["running"] == 1
+
+
+async def test_always_on_refuses_capacity_without_stopping_existing_work(web):
+    settings, runner, upstream, clock, accounts, app = web
+    accounts.s = replace(settings, web_idle_stop_s=0)
+    async with app.router.lifespan_context(app):
+        async with await client_for(app) as client:
+            first = body(await sign_in(client, "someone@example.com"))
+            clock.now += 601
+            response = await sign_in(client, "another@example.com")
+            assert response.status_code == 503 and body(response)["error"] == "web_busy"
+            assert runner.kept[f"nmw-{first['slug']}"]["running"] is True
+            assert len(runner.kept) == 1
+
+
+async def test_tls_permission_only_accepts_registered_account_hosts(web):
+    settings, runner, upstream, clock, accounts, app = web
+    async with app.router.lifespan_context(app):
+        async with await client_for(app) as client:
+            me = body(await sign_in(client, "someone@example.com"))
+            allowed = f"{me['slug']}.{settings.session_domain}"
+            response = await client.get("/api/web/tls", params={"domain": allowed})
+            assert response.status_code == 204
+            for domain in (
+                "",
+                settings.site_host,
+                f"unknown.{settings.session_domain}",
+                f"{allowed}.evil.example",
+                f"{me['slug']}.evil.example",
+            ):
+                response = await client.get("/api/web/tls", params={"domain": domain})
+                assert response.status_code == 403
 
 
 async def test_a_lapsed_key_means_signing_in_again(web):
@@ -319,7 +364,7 @@ async def test_an_invite_code_is_passed_on_to_the_relay(web):
         r = await c.get("/web/?invite=abcd2345")
         assert r.status_code == 200 and 'id="invite"' in r.text
         assert "¥" not in r.text  # no amounts on the way in; the account page has them
-        assert "Mainland China phone number or e-mail" in r.text and "/api/web/login" in r.text
+        assert "E-mail address" in r.text and "/api/web/login" in r.text
         assert "phone_region" in r.text  # the relay's refusal of an overseas number, in Chinese too
         r = await c.post("/api/web/code", json={"identifier": "invited@example.com"})
         assert r.status_code == 204

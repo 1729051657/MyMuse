@@ -1,0 +1,42 @@
+(gateway_proxy) {
+	reverse_proxy gateway:8000 {
+		header_up X-Forwarded-For {remote_host}
+		flush_interval -1
+	}
+}
+
+(app_routes) {
+	encode zstd gzip
+	header {
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		-Server
+	}
+	request_body {
+		max_size 64MB
+	}
+	handle /web* {
+		import gateway_proxy
+	}
+	handle /api/web/* {
+		import gateway_proxy
+	}
+	@relay path /v1/* /app* /healthz
+	handle @relay {
+		reverse_proxy relay:8787 {
+			header_up X-Forwarded-For {remote_host}
+			flush_interval -1
+		}
+	}
+	handle /privacy {
+		root * /srv
+		rewrite * /privacy.html
+		file_server
+	}
+	handle / {
+		redir /web/ 302
+	}
+	handle {
+		respond 404
+	}
+}

@@ -299,7 +299,8 @@ phone in the browser, with its sign-in, took the web version's place), `/web/` r
 the showcase site, the phone, so [nanomuse.cn/web/](https://nanomuse.cn/web/), which the
 project site's Caddy block hands to the gateway, stays the web entry either way. On, `/web/`
 is a sign-in page (served by the gateway; the site's Caddy block hands `/web/*` and
-`/api/web/*` over to it): an e-mail or a mobile number, then the six-digit code.
+`/api/web/*` over to it): an e-mail, then the six-digit code. This fork serves the
+MyMuse registration page; the relay API still supports its configured sign-in methods.
 The gateway asks nanoMuse Cloud for the code and checks it (`POST /v1/auth/code`,
 `/v1/auth/verify`, the visitor's address forwarded so the relay's per-address limits still
 count the right person), gets the account's key back, and starts, or wakes, the account's
@@ -329,6 +330,11 @@ the wake, so a bookmark still works and a stranger typing the address starts not
 every place is taken the quietest sleeps to make room, unless it was used in the last five
 minutes: `503 web_busy`), and `WEB_MAX_ACCOUNTS` may exist at all (`503 web_full`). Model
 use is the account's own allowance on the relay; the gateway meters nothing here.
+
+`WEB_IDLE_STOP_S=0` keeps account containers running without idle or capacity eviction.
+At the running limit a new start returns `503 web_busy` instead of putting an existing
+assistant to sleep. The [MyMuse deployment guide](../../docs/mymuse.md) combines this
+mode with a self-hosted relay, browser-enabled runtime and account-scoped HTTPS.
 
 ## Deploying
 

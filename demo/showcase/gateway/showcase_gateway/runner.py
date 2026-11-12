@@ -139,6 +139,7 @@ class DockerRunner:
         try:
             address = await self._docker(
                 "inspect",
+                "--type=container",
                 "-f",
                 "{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}",
                 name,
@@ -172,7 +173,7 @@ class DockerRunner:
 
     async def address_of(self, name: str) -> str | None:
         try:
-            out = await self._docker("inspect", "-f", self._ADDRESS, name)
+            out = await self._docker("inspect", "--type=container", "-f", self._ADDRESS, name)
         except RunnerError as exc:
             if "No such" in str(exc):
                 return None
@@ -181,7 +182,9 @@ class DockerRunner:
 
     async def exists(self, name: str) -> bool:
         try:
-            await self._docker("inspect", "-f", "{{.Id}}", name)
+            # Generic inspect also probes images when the container is absent; the socket
+            # proxy deliberately denies that endpoint. Ask for containers only.
+            await self._docker("inspect", "--type=container", "-f", "{{.Id}}", name)
         except RunnerError as exc:
             if "No such" not in str(exc):
                 raise

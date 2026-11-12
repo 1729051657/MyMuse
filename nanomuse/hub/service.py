@@ -208,12 +208,19 @@ class HubService:
         container passes the account key in ``NANOMUSE_CLOUD_KEY`` (``NANOMUSE_CLOUD_HINT`` /
         ``NANOMUSE_CLOUD_CHANNEL`` for the account page). The key goes into the vault like
         one typed in; the relay becomes the model when nothing else is configured; the first
-        run is skipped, since the person signed in one page earlier. Nothing happens when the
-        vault already holds a key."""
+        run is skipped, since the person signed in one page earlier. Reauthentication replaces
+        a key kept in the persistent vault, including in an already-created model client."""
         key = os.environ.get("NANOMUSE_CLOUD_KEY", "").strip()
-        if not key or self.signed_in:
+        if not key or key == self._key():
             return
+        was_signed_in = self.signed_in
         self.svc.app.vault.set(CLOUD_KEY, key)
+        if was_signed_in:
+            self.cloud.api_key = key
+            if self._llm_is_cloud():
+                self.svc.connections._swap_llm()
+            logger.info("hosted cloud session refreshed from the environment")
+            return
         self.data["cloud"] = {
             "base_url": self.cloud.base_url,
             "hint": os.environ.get("NANOMUSE_CLOUD_HINT", "").strip(),

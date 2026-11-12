@@ -37,7 +37,8 @@ COPY --chown=muse:muse nanomuse ./nanomuse
 COPY --chown=muse:muse config/config.example.toml ./config/config.example.toml
 
 RUN if [ "$WITH_BROWSER" = "1" ]; then \
-      apt-get update \
+      sed -i 's|http://deb.debian.org|https://deb.debian.org|g' /etc/apt/sources.list.d/debian.sources \
+      && apt-get update \
       && apt-get install -y --no-install-recommends libatomic1 \
       && pip install --no-cache-dir ".[browser,channels]" \
       && playwright install --with-deps chromium \

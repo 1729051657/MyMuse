@@ -439,6 +439,7 @@ class Settings:
     admin_token: str = field(default_factory=lambda: _env("CLOUD_ADMIN_TOKEN"))
     # What the app should put in the provider's base URL, without /v1.
     public_base: str = field(default_factory=lambda: _env("PUBLIC_BASE", "http://127.0.0.1:8787"))
+    service_name: str = field(default_factory=lambda: _env("SERVICE_NAME", "nanoMuse"))
 
     upstream_base: str = field(default_factory=lambda: _env("UPSTREAM_BASE", "https://dashscope.aliyuncs.com/compatible-mode/v1"))
     upstream_key: str = field(default_factory=lambda: _env("UPSTREAM_KEY"))

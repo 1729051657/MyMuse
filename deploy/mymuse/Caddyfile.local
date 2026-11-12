@@ -1,0 +1,18 @@
+{
+	auto_https off
+}
+
+import /etc/caddy/routes.caddy
+
+:80 {
+	route {
+		@account host *.{$SESSION_DOMAIN}
+		handle @account {
+			request_body {
+				max_size 64MB
+			}
+			import gateway_proxy
+		}
+		import app_routes
+	}
+}

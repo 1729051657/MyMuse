@@ -1,0 +1,24 @@
+{
+	email "{$ACME_EMAIL}"
+	on_demand_tls {
+		ask http://gateway:8000/api/web/tls
+	}
+}
+
+import /etc/caddy/routes.caddy
+
+{$SITE_HOST} {
+	import app_routes
+}
+
+# Certificates are issued per registered account, using ordinary wildcard A/AAAA DNS.
+# The permission endpoint rejects any hostname that is not in the account store.
+https:// {
+	tls {
+		on_demand
+	}
+	request_body {
+		max_size 64MB
+	}
+	import gateway_proxy
+}
