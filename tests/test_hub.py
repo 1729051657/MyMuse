@@ -788,6 +788,7 @@ def test_hosted_reauthentication_refreshes_the_saved_key_and_keeps_model_choice(
     settings.llm.api_key = "{{vault:" + CLOUD_KEY + "}}" if cloud_model else "own-model-key"
     service = MuseService(settings, llm=MockLLM([]))
     service.app.vault.set(CLOUD_KEY, "expired-session")
+    old_device_id = service.hub.device_id
     old_model = service.app.llm
     monkeypatch.setenv("NANOMUSE_CLOUD_KEY", "test-key")
 
@@ -795,6 +796,8 @@ def test_hosted_reauthentication_refreshes_the_saved_key_and_keeps_model_choice(
 
     assert service.app.vault.get(CLOUD_KEY) == "test-key"
     assert service.hub.cloud.api_key == "test-key"
+    assert service.hub.device_id != old_device_id
+    assert service.connections.data["hub"]["device_id"] == service.hub.device_id
     assert settings.llm.model == "saved-model"
     if cloud_model:
         assert service.app.llm is not old_model
@@ -802,6 +805,36 @@ def test_hosted_reauthentication_refreshes_the_saved_key_and_keeps_model_choice(
     else:
         assert service.app.llm is old_model
         assert settings.llm.api_key == "own-model-key"
+
+
+def test_hosted_hub_identity_survives_restart_but_changes_with_the_session(
+    settings: Settings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from nanomuse.cloud import CLOUD_KEY
+
+    monkeypatch.setenv("NANOMUSE_CLOUD_KEY", "first-session")
+    service = MuseService(settings, llm=MockLLM([]))
+    asyncio.run(service.hub._seed_from_env())
+    first_id = service.hub.device_id
+    service.connections.data["hub"]["name"] = "Kept assistant"
+    service.connections._save()
+
+    fresh_settings = settings.model_copy(deep=True)
+    fresh_settings.hub.device_id = ""
+    restarted = MuseService(fresh_settings.model_copy(deep=True), llm=MockLLM([]))
+    asyncio.run(restarted.hub._seed_from_env())
+    assert restarted.hub.device_id == first_id
+
+    monkeypatch.setenv("NANOMUSE_CLOUD_KEY", "second-session")
+    renewed = MuseService(fresh_settings.model_copy(deep=True), llm=MockLLM([]))
+    asyncio.run(renewed.hub._seed_from_env())
+    assert renewed.hub.device_id != first_id
+    assert renewed.connections.data["hub"]["name"] == "Kept assistant"
+    assert renewed.app.vault.get(CLOUD_KEY) == "second-session"
+
+    restarted_again = MuseService(fresh_settings.model_copy(deep=True), llm=MockLLM([]))
+    asyncio.run(restarted_again.hub._seed_from_env())
+    assert restarted_again.hub.device_id == renewed.hub.device_id
 
 
 def test_a_signed_in_runtime_with_no_model_key_makes_the_relay_its_model(

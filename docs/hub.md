@@ -367,6 +367,10 @@ holds and never takes one over. Existing clients keep their keys and register
 at their next connection; clients that send the identity at sign-in bind it
 there.
 
+Hosted runtimes generate a new Hub ID when the gateway supplies a different session
+key. They keep that ID when restarted with the same key, while the workspace, chats
+and model settings remain in the same volumes.
+
 The agent's name and look are the account's, not a device's: `GET` / `PUT
 /v1/me/profile` on the relay keep them (the dragon, an emoji on a colour, or a
 face drawn in the avatar studio with its five small stills), last writer wins,

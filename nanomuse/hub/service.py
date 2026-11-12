@@ -214,6 +214,14 @@ class HubService:
         if not key or key == self._key():
             return
         was_signed_in = self.signed_in
+        # A hosted session key may register a free Hub identity, but cannot take the
+        # identity that the previous session still owns. Keep it only across restarts.
+        hub = dict(self.data.get("hub") or {})
+        self.settings.hub.device_id = "pc-" + uuid.uuid4().hex[:12]
+        hub["device_id"] = self.device_id
+        self.data["hub"] = hub
+        self._save()
+        llm_session.set_device(self.device_id)
         self.svc.app.vault.set(CLOUD_KEY, key)
         if was_signed_in:
             self.cloud.api_key = key

@@ -4,6 +4,8 @@ All notable changes to nanoMuse. The format follows [Keep a Changelog](https://k
 
 ## [Unreleased]
 
+- Renewed hosted assistants' Hub identity with their session credentials so signing in again does not leave Devices refused with `bad_device`; kept the identity across restarts of the same session.
+
 - Documented real SMTP verification for the local MyMuse deployment, including provider authorization codes and applying mail settings without restarting assistants.
 
 - Opened model-generated `/workspace/` and `sandbox:/workspace/` file links in the existing web file viewer, including replies reopened from saved conversations.

@@ -51,6 +51,8 @@ This stack fixes `WEB_IDLE_STOP_S=0`. Closing a browser leaves its assistant run
 
 This keeps containers running; it does not provide a durable multi-host scheduler or a delivery-time guarantee. The relay session key expires after 30 days by default. Sign in again to refresh it; reauthentication recreates the container around the same volumes and may interrupt an active task. Provider failures, missing approvals, server downtime and exhausted model allowance can still prevent a scheduled task from completing.
 
+A refreshed hosted session gets a new Hub device ID so it does not claim an ID still held by the previous session. Restarting the same session keeps its ID. The account hostname, chat history, files and model choice are kept. Previous device entries can remain offline in Devices.
+
 ## Local acceptance {#local-acceptance}
 
 In `.env`, enable the local settings at the bottom of `.env.example`: `muse.localhost`, `agents.localhost`, HTTP port 9080, loopback bindings, `CADDY_CONFIG=Caddyfile.local`, and `CODE_SENDER=log`. Keep the same build and start commands. This setup writes codes to the relay log and does not request public certificates. Configure a test model provider if you need chat; use a separate account for acceptance.
