@@ -53,7 +53,9 @@ This keeps containers running; it does not provide a durable multi-host schedule
 
 ## Local acceptance {#local-acceptance}
 
-In `.env`, enable the local settings at the bottom of `.env.example`: `muse.localhost`, `agents.localhost`, HTTP port 9080, loopback bindings, `CADDY_CONFIG=Caddyfile.local`, and `CODE_SENDER=log`. Keep the same build and start commands. This local mode does not send mail or request public certificates. Configure a test model provider if you need chat; do not use a production account for acceptance.
+In `.env`, enable the local settings at the bottom of `.env.example`: `muse.localhost`, `agents.localhost`, HTTP port 9080, loopback bindings, `CADDY_CONFIG=Caddyfile.local`, and `CODE_SENDER=log`. Keep the same build and start commands. This setup writes codes to the relay log and does not request public certificates. Configure a test model provider if you need chat; use a separate account for acceptance.
+
+To test real e-mail delivery with the same local HTTP setup, set `CODE_SENDER=smtp` and fill in `SMTP_*`. Use the provider's SMTP authorization code as `SMTP_PASSWORD` when required. Recreate the relay with `docker compose -f compose.yml up -d --no-deps relay`, then request a code on the registration page and read it in the recipient's mailbox. The link in that message still points to the local service.
 
 ```bash
 docker compose -f compose.yml logs relay
@@ -61,7 +63,7 @@ curl http://muse.localhost:9080/healthz
 curl http://muse.localhost:9080/api/web/info
 ```
 
-Open `http://muse.localhost:9080/web/` in a browser that resolves `*.localhost` to loopback. Request a code and read it in the relay log. Check these visible results:
+Open `http://muse.localhost:9080/web/` in a browser that resolves `*.localhost` to loopback. Request a code and read it in the relay log or mailbox, according to `CODE_SENDER`. Check these visible results:
 
 1. A first sign-in reaches a separate account hostname and opens the assistant.
 2. Upload a file, create a memory, close the page and return. Both remain available.

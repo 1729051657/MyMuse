@@ -4,6 +4,8 @@ All notable changes to nanoMuse. The format follows [Keep a Changelog](https://k
 
 ## [Unreleased]
 
+- Documented real SMTP verification for the local MyMuse deployment, including provider authorization codes and applying mail settings without restarting assistants.
+
 - Opened model-generated `/workspace/` and `sandbox:/workspace/` file links in the existing web file viewer, including replies reopened from saved conversations.
 
 - Added the MyMuse e-mail registration page and a self-hosted Compose stack with a relay, per-account browser assistants and account-scoped HTTPS certificates, without the simulated phone.

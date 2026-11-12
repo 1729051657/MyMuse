@@ -53,7 +53,9 @@ Caddy 为每个账号域名[按需申请 TLS 证书](https://caddyserver.com/doc
 
 ## 本地验收 {#local-acceptance}
 
-在 `.env` 中启用 `.env.example` 底部的本地配置：`muse.localhost`、`agents.localhost`、HTTP 9080 端口、回环地址绑定、`CADDY_CONFIG=Caddyfile.local` 和 `CODE_SENDER=log`。构建和启动命令相同。本地模式不发送邮件，也不申请公网证书。需要对话时配置测试模型服务，验收使用独立测试账号。
+在 `.env` 中启用 `.env.example` 底部的本地配置：`muse.localhost`、`agents.localhost`、HTTP 9080 端口、回环地址绑定、`CADDY_CONFIG=Caddyfile.local` 和 `CODE_SENDER=log`。构建和启动命令相同。这套设置将验证码写入中继日志，不申请公网证书。需要对话时配置测试模型服务，验收使用独立测试账号。
+
+本地 HTTP 环境也能验收真实邮件：设置 `CODE_SENDER=smtp` 并填写 `SMTP_*`。邮箱服务商要求 SMTP 授权码时，将其填入 `SMTP_PASSWORD`。执行 `docker compose -f compose.yml up -d --no-deps relay` 重建中继后，在注册页申请验证码并到收件箱读取。邮件中的服务链接仍指向本地地址。
 
 ```bash
 docker compose -f compose.yml logs relay
@@ -61,7 +63,7 @@ curl http://muse.localhost:9080/healthz
 curl http://muse.localhost:9080/api/web/info
 ```
 
-使用能将 `*.localhost` 解析到回环地址的浏览器，打开 `http://muse.localhost:9080/web/`。申请验证码后从 relay 日志读取。核对实际结果：
+使用能将 `*.localhost` 解析到回环地址的浏览器，打开 `http://muse.localhost:9080/web/`。申请验证码后，按 `CODE_SENDER` 配置从中继日志或收件箱读取。核对实际结果：
 
 1. 首次登录进入独立账号域名并打开助手。
 2. 上传文件、创建记忆，关闭网页再进入，两者仍可访问。
