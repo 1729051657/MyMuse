@@ -14,6 +14,8 @@ MyMuse builds on nanoMuse. The deployment under `deploy/mymuse/` brings together
 
 No MobileGym build or dataset is used. The project retains nanoMuse's licence and attribution.
 
+File links in replies, including `/workspace/` and `sandbox:/workspace/` paths, open the existing workspace viewer when they refer to a file generated in that conversation. Saved conversations keep the same file links when reopened.
+
 ## Start the service {#start-the-service}
 
 Use a Linux server with Docker Compose. Point `muse.example.com` and `*.agents.example.com` to it. Ports 80 and 443 must reach Caddy directly. Use hostnames of your own; these are examples.

@@ -14,6 +14,8 @@ MyMuse 基于 nanoMuse。`deploy/mymuse/` 将已有账号中继、Web 网关和 
 
 部署不构建 MobileGym，也不使用其数据集。保留 nanoMuse 的许可证和来源声明。
 
+回复中的文件链接，包括 `/workspace/` 和 `sandbox:/workspace/` 路径，只要指向该对话已生成的文件，就能在工作区查看器中打开。保存后重新打开对话，文件链接仍然可用。
+
 ## 启动服务 {#start-the-service}
 
 准备带 Docker Compose 的 Linux 服务器，将 `muse.example.com` 和 `*.agents.example.com` 指向它。80、443 端口需要直接到达 Caddy。这里的域名只是示例，部署时替换成自己的域名。

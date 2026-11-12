@@ -1,5 +1,5 @@
 import type { ComponentPropsWithoutRef } from "react";
-import ReactMarkdown from "react-markdown";
+import ReactMarkdown, { defaultUrlTransform } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { safeDecodeURIComponent } from "../util";
 
@@ -10,7 +10,7 @@ import { safeDecodeURIComponent } from "../util";
  * accept the workspace path, a path suffix, or the bare file name (when it is unambiguous).
  */
 export function matchFile(text: string, files: readonly string[]): string | null {
-  const t = text.trim().replace(/^\.?\//, "");
+  const t = text.trim().replace(/^\/workspace\//, "").replace(/^\.?\//, "");
   if (!t || files.length === 0) return null;
   if (files.includes(t)) return t;
   const suffix = files.filter((f) => f.endsWith(`/${t}`));
@@ -112,6 +112,9 @@ export function Markdown({
     <div className="md text-[15px] leading-[1.5] break-words">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
+        urlTransform={(url, key) =>
+          defaultUrlTransform(key === "href" && url.startsWith("sandbox:/workspace/") ? url.slice("sandbox:".length) : url)
+        }
         components={{
           a: ({ href, children, ...props }) => {
             const path = href && !/^[a-z]+:/i.test(href) ? fileFor(safeDecodeURIComponent(href)) : null;
