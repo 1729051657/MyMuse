@@ -250,6 +250,7 @@ class PlaywrightBackend(BrowserBackend):
         self._url_guard: Callable[[str], Awaitable[bool]] | None = None
         self._guard_installed = False
         self._blocked_url = ""
+        self._crashed_url: str | None = None
 
     @staticmethod
     def available() -> bool:
@@ -264,6 +265,9 @@ class PlaywrightBackend(BrowserBackend):
         return self._page is not None and not self._page.is_closed()
 
     async def ensure(self) -> None:
+        reopen = self._crashed_url
+        if reopen is not None:
+            await self.close()
         if self.open:
             return
         from playwright.async_api import async_playwright
@@ -288,6 +292,13 @@ class PlaywrightBackend(BrowserBackend):
         self._page = pages[0] if pages else await self._context.new_page()
         self._page.set_default_timeout(self.timeout_ms)
         self._page.on("download", self._on_download)
+        self._page.on("crash", self._on_crash)
+        if reopen and reopen != "about:blank":
+            await self.goto(reopen)
+
+    def _on_crash(self, page: Any) -> None:
+        self._crashed_url = str(page.url)
+        logger.warning("browser page crashed; it will reopen on the next refresh")
 
     def _on_download(self, download: Any) -> None:
         async def save() -> None:
@@ -411,6 +422,7 @@ class PlaywrightBackend(BrowserBackend):
         finally:
             self._context = self._page = self._pw = None
             self._guard_installed = False
+            self._crashed_url = None
 
 
 # ---------------------------------------------------------------------- the phone's WebView

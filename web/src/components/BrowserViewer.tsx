@@ -24,10 +24,9 @@ const LIVE_POLL_MS = 1000;
  * hands the page to you itself ("Your turn — sign in to Gmail") the same controls are on
  * and the same Done gives it back.
  */
-export function BrowserViewer({ thread, eventId, onClose }: { thread: string; eventId: string; onClose: () => void }) {
+export function BrowserViewer({ thread, eventId, onClose }: { thread: string; eventId?: string; onClose: () => void }) {
   const { state, toast } = useStore();
   const t = useT();
-  const event = (state.events[thread] ?? []).find((e) => e.id === eventId) as BrowserEvent | undefined;
   // the hold for this chat's browser, if one is on: by you (Take over) or by the agent (hand_over)
   const hold = state.holds.find((h) => h.thread === thread && h.tool === "browser");
   const [pending, setPending] = useState<"on" | "off" | null>(null);
@@ -38,6 +37,8 @@ export function BrowserViewer({ thread, eventId, onClose }: { thread: string; ev
   const imgRef = useRef<HTMLImageElement>(null);
   const hintId = useId();
   const control = pending ? pending === "on" : !!hold;
+  const frames = (state.events[thread] ?? []).filter((e): e is BrowserEvent => e.type === "browser");
+  const event = eventId && !control ? frames.find((e) => e.id === eventId) : frames[frames.length - 1];
 
   useEffect(() => setGone(false), [event?.frame]);
   // the server's word wins once it arrives
@@ -62,8 +63,10 @@ export function BrowserViewer({ thread, eventId, onClose }: { thread: string; ev
       setBusy(body.action);
       try {
         await api.browserControl(thread, body);
+        return true;
       } catch (e) {
         toast((e as Error).message);
+        return false;
       } finally {
         setBusy(null);
       }
@@ -89,7 +92,7 @@ export function BrowserViewer({ thread, eventId, onClose }: { thread: string; ev
   // while you have the page, the picture follows what you do: a fresh look every second
   // (a page that is still loading, a redirect after a sign-in, a code that arrived)
   useEffect(() => {
-    if (!control || inApp || !event || event.status !== "live") return;
+    if (!control || inApp || !event) return;
     const timer = window.setInterval(() => {
       if (document.hidden) return;
       void api.browserControl(thread, { action: "look" }).catch(() => undefined);
@@ -125,29 +128,29 @@ export function BrowserViewer({ thread, eventId, onClose }: { thread: string; ev
     }
   };
 
-  if (!event) return null;
-  let host = event.url;
+  let host = event?.url || "";
   try {
-    host = new URL(event.url).host;
+    host = new URL(host).host;
   } catch {
     /* raw */
   }
-  const live = event.status === "live";
+  const live = event?.status === "live" || control;
   const name = state.profile?.name ?? "nanoMuse";
   const agentState = hold
     ? t("{name} is waiting for you", { name })
     : state.status.state !== "idle" && state.status.thread === thread
       ? t("{name} is working", { name })
-      : event.action;
+      : event?.action || "";
 
   return (
     <Sheet
       open
+      wide
       onClose={onClose}
       title={
         <div className="flex items-center gap-2 min-w-0">
           <Globe size={17} className="text-accent shrink-0" />
-          <span className="truncate">{event.title || host}</span>
+          <span className="truncate">{event?.title || host || t("Browser")}</span>
           {live && (
             <span className="ml-1 flex items-center gap-1 rounded-full bg-rose-500/12 px-2 py-0.5 text-[10.5px] font-semibold text-rose-600 dark:text-rose-300">
               <span className="h-1.5 w-1.5 rounded-full bg-rose-500 animate-pulse" /> {t("LIVE")}
@@ -163,7 +166,7 @@ export function BrowserViewer({ thread, eventId, onClose }: { thread: string; ev
               onSubmit={(e) => {
                 e.preventDefault();
                 if (!text) return;
-                void act({ action: "type", text }).then(() => setText(""));
+                void act({ action: "type", text }).then((ok) => { if (ok) setText(""); });
               }}
             >
               <input
@@ -193,7 +196,7 @@ export function BrowserViewer({ thread, eventId, onClose }: { thread: string; ev
               onSubmit={(e) => {
                 e.preventDefault();
                 if (!url) return;
-                void act({ action: "navigate", url }).then(() => setUrl(""));
+                void act({ action: "navigate", url }).then((ok) => { if (ok) setUrl(""); });
               }}
             >
               <button
@@ -284,7 +287,12 @@ export function BrowserViewer({ thread, eventId, onClose }: { thread: string; ev
         </div>
       )}
       <div className={cx("relative overflow-hidden rounded-2xl border border-border bg-surface-2", control && "ring-2 ring-accent")}>
-        {gone ? (
+        {!event ? (
+          <div className="flex aspect-[16/10] flex-col items-center justify-center gap-2 text-muted">
+            <Globe size={28} />
+            <span className="text-[14px]">{t("Open a URL to start the browser.")}</span>
+          </div>
+        ) : gone ? (
           <div className="flex aspect-[16/10] flex-col items-center justify-center gap-1 text-muted">
             <Globe size={24} />
             <span className="text-[12.5px]">{t("This frame is no longer available.")}</span>
@@ -305,7 +313,7 @@ export function BrowserViewer({ thread, eventId, onClose }: { thread: string; ev
             tabIndex={control ? 0 : undefined}
             aria-describedby={control ? hintId : undefined}
             draggable={false}
-            className={cx("block w-full select-none", control ? "cursor-crosshair" : "")}
+            className={cx("block w-auto max-w-full max-h-[calc(92dvh-15rem)] mx-auto select-none", control ? "cursor-crosshair" : "")}
           />
         )}
         {busy && busy !== "look" && (
@@ -315,8 +323,8 @@ export function BrowserViewer({ thread, eventId, onClose }: { thread: string; ev
         )}
       </div>
       <div className="mt-2 flex items-center justify-between text-[12px] text-muted">
-        <span className="truncate">{event.url}</span>
-        <span className="shrink-0 ml-2">{event.frames === 1 ? t("1 frame") : t("{n} frames", { n: event.frames })}</span>
+        <span className="truncate">{event?.url}</span>
+        {event && <span className="shrink-0 ml-2">{event.frames === 1 ? t("1 frame") : t("{n} frames", { n: event.frames })}</span>}
       </div>
       {control && (
         <div className="mt-3 rounded-2xl bg-accent/8 px-3.5 py-2.5 text-[13px] leading-snug">

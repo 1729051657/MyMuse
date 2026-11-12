@@ -4,6 +4,9 @@ All notable changes to nanoMuse. The format follows [Keep a Changelog](https://k
 
 ## [Unreleased]
 
+- Added a direct browser button to the web chat and a wider takeover viewer that works before the first frame, refreshes older cards and preserves failed navigation input.
+- Reopened crashed Chromium pages with their persistent profile on refresh and raised MyMuse's default assistant memory limit to 2 GB.
+
 - Selected the existing You.com search connector for new MyMuse assistants and added optional encrypted DNS for proxy environments, keeping private-address checks enabled for public-page tools.
 
 - Renewed hosted assistants' Hub identity with their session credentials so signing in again does not leave Devices refused with `bad_device`; kept the identity across restarts of the same session.

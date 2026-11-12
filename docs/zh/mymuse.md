@@ -16,6 +16,8 @@ MyMuse 基于 nanoMuse。`deploy/mymuse/` 将已有账号中继、Web 网关和 
 
 回复中的文件链接，包括 `/workspace/` 和 `sandbox:/workspace/` 路径，只要指向该对话已生成的文件，就能在工作区查看器中打开。保存后重新打开对话，文件链接仍然可用。
 
+聊天顶部的“浏览器”按钮可直接打开云浏览器，进行跳转、点击、输入和登录。它使用账号容器里的 Chromium，独立于桌面“双手”。每个助手默认内存上限为 2 GB，Docker 宿主机也需要留出同时运行这些浏览器的内存；容器上限并不预留宿主机内存。
+
 ## 启动服务 {#start-the-service}
 
 准备带 Docker Compose 的 Linux 服务器，将 `muse.example.com` 和 `*.agents.example.com` 指向它。80、443 端口需要直接到达 Caddy。这里的域名只是示例，部署时替换成自己的域名。

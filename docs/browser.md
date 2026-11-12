@@ -74,6 +74,10 @@ timestamped filename. Shots taken within the same second get separate names such
 
 ## Logging in
 
+In the web console, the **Browser** button at the top of the chat opens the existing browser controls directly, even before the agent has opened a page. Enter a URL and choose **Go**, click the picture to focus a field, then use the text input or key buttons below it. **Done** returns control to the agent. The viewer follows fresh frames while you have control, including when opened from an older card, and uses a wider dialog on desktop screens.
+
+Browser control is independent of this computer's desktop hands. A hosted Chromium can run with the desktop hands off. If a Chromium page crashes, the next refresh reopens its URL using the same persistent profile. Resource-heavy pages still need enough container and host memory.
+
 A page that wants a login is the user's job, not the model's. The agent stops at the form and hands the page over (`browser` → `hand_over`, with the reason: *sign in to 12306*, *type the code from the SMS*, *solve the CAPTCHA*, *confirm the payment*); the user does it and presses **Done**; the agent continues with the page as it is. The browser card in the chat is where that happens, and the same card appears when the user takes over first:
 
 - **On the server's Chromium**: *Take over* on the card (or the agent's hand-over), then tap the picture to click, scroll, go back, type into the focused field, press Enter, or open a URL; **Done** returns the page. The frame is the page; the taps are mapped onto it; the picture refreshes every second while you have it. In the web console the frame also takes the keyboard while you have the page: Tab to it, the arrow and Page keys scroll it and Enter presses Enter on the page; the buttons under it do the rest without a pointer.

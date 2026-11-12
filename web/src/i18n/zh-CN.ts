@@ -172,6 +172,7 @@ const zhCN: Record<string, string> = {
   Type: "输入",
   "Press Enter": "按回车",
   "Open a URL…": "打开一个网址…",
+  "Open a URL to start the browser.": "输入网址，打开浏览器。",
   Go: "前往",
   "Tap the page to click; with the frame focused, arrow keys scroll it and Enter presses Enter. If the browser was closed, open a URL first.":
     "点击画面即可点击网页；画面获得焦点后，方向键滚动页面，Enter 键在网页上按下回车。如果浏览器已关闭，请先打开一个网址。",

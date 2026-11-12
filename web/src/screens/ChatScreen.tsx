@@ -1,4 +1,4 @@
-import { ArrowUp, ChevronDown, FileText, Loader2, Menu, MessageSquarePlus, Monitor, MonitorSmartphone, Moon, Phone, Plus, Smartphone, Square, Table2, Trash2, Wand2, X } from "lucide-react";
+import { ArrowUp, ChevronDown, FileText, Globe, Loader2, Menu, MessageSquarePlus, Monitor, MonitorSmartphone, Moon, Phone, Plus, Smartphone, Square, Table2, Trash2, Wand2, X } from "lucide-react";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { api, fileUrl } from "../api";
 import { AllowanceHeadsUp } from "../components/AllowanceWays";
@@ -35,7 +35,7 @@ export function ChatScreen() {
   const thread = threads.find((t) => t.id === activeThread);
   const [activityOpen, setActivityOpen] = useState(false);
   // the browser card being watched (or driven) full-screen
-  const [browserView, setBrowserView] = useState<string | null>(null);
+  const [browserView, setBrowserView] = useState<{ eventId?: string } | null>(null);
   const name = profile?.name ?? "nanoMuse";
   // a chat addressed to another device: is that device still on the hub?
   const deviceOnline = thread?.device ? (state.hub?.devices.find((d) => d.id === thread.device)?.online ?? null) : null;
@@ -246,7 +246,19 @@ export function ChatScreen() {
               <Menu size={22} />
             </MuseRoundButton>
           }
-          trailing={<MoreMenu actions={[{ label: t("Coding agents"), onClick: () => setTab("coding") }]} />}
+          trailing={
+            <>
+              {state.settings?.connectors.browser && (
+                <MuseRoundButton label={t("Browser")} onClick={() => {
+                  setBrowserView({});
+                  void api.browserControl(activeThread, { action: "take_over" }).catch((e: Error) => toast(e.message));
+                }}>
+                  <Globe size={20} />
+                </MuseRoundButton>
+              )}
+              <MoreMenu actions={[{ label: t("Coding agents"), onClick: () => setTab("coding") }]} />
+            </>
+          }
           under={
             thread && thread.id !== "main" ? (
               thread.device ? (
@@ -303,7 +315,7 @@ export function ChatScreen() {
                 decide(ev.id, approved, scope).catch((e: Error) => toast(e.message || t("Could not send decision")))
               }
               onOpenFile={openFile}
-              onOpenBrowser={setBrowserView}
+              onOpenBrowser={(eventId) => setBrowserView({ eventId })}
               files={files}
               onCloudRetry={cloudRetryFor(i)}
               thread={activeThread}
@@ -362,7 +374,7 @@ export function ChatScreen() {
       />
 
       <MuseSheet open={activityOpen} onClose={() => setActivityOpen(false)} />
-      {browserView && <BrowserViewer thread={activeThread} eventId={browserView} onClose={() => setBrowserView(null)} />}
+      {browserView && <BrowserViewer key={activeThread} thread={activeThread} eventId={browserView.eventId} onClose={() => setBrowserView(null)} />}
     </div>
   );
 }

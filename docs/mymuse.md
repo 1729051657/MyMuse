@@ -16,6 +16,8 @@ No MobileGym build or dataset is used. The project retains nanoMuse's licence an
 
 File links in replies, including `/workspace/` and `sandbox:/workspace/` paths, open the existing workspace viewer when they refer to a file generated in that conversation. Saved conversations keep the same file links when reopened.
 
+The chat's **Browser** button opens the hosted browser directly for navigation, clicking, typing and login. It uses Chromium inside the account's container, independently of desktop hands. The default memory limit is 2 GB per assistant; make sure the Docker host has room for the number of browsers you run. A container limit alone does not reserve host memory.
+
 ## Start the service {#start-the-service}
 
 Use a Linux server with Docker Compose. Point `muse.example.com` and `*.agents.example.com` to it. Ports 80 and 443 must reach Caddy directly. Use hostnames of your own; these are examples.

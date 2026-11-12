@@ -11,12 +11,14 @@ export function Sheet({
   title,
   children,
   footer,
+  wide = false,
 }: {
   open: boolean;
   onClose: () => void;
   title?: ReactNode;
   children: ReactNode;
   footer?: ReactNode;
+  wide?: boolean;
 }) {
   const t = useT();
   const panel = useRef<HTMLDivElement>(null);
@@ -39,7 +41,7 @@ export function Sheet({
         role="dialog"
         aria-modal="true"
         aria-labelledby={title ? titleId : undefined}
-        className="sheet-in relative w-full sm:max-w-lg max-h-[92dvh] flex flex-col bg-surface rounded-t-3xl sm:rounded-3xl shadow-2xl border border-border"
+        className={`sheet-in relative w-full ${wide ? "sm:max-w-6xl" : "sm:max-w-lg"} max-h-[92dvh] flex flex-col bg-surface rounded-t-3xl sm:rounded-3xl shadow-2xl border border-border`}
       >
         <div className="flex items-center gap-3 px-5 pt-4 pb-2">
           <div className="sm:hidden absolute left-1/2 -translate-x-1/2 top-2 h-1 w-10 rounded-full bg-border" />
