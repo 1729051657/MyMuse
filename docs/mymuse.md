@@ -45,6 +45,21 @@ Open `https://muse.example.com/web/`. Register with an e-mail code. To visit the
 
 Caddy uses [on-demand TLS](https://caddyserver.com/docs/automatic-https#on-demand-tls) for each account hostname. Before issuing a certificate it calls `/api/web/tls?domain=…`, which accepts only a registered account's exact hostname. Ordinary wildcard DNS is sufficient; no DNS-provider token or wildcard certificate is needed. The first visit includes certificate issuance. Certificate-authority rate limits still apply; certificate issuance at public-registration scale has not been validated.
 
+## Search and public pages {#search-and-public-pages}
+
+New assistants use the existing You.com search connector by default, without a search API key. Set `MYMUSE_SEARCH_PROVIDER` to another supported provider before creating assistants, or change an existing account under Connections → Web search. Saved account choices take precedence. Anonymous search has provider limits; use your own search API key or SearXNG instance for a public service.
+
+If public pages are refused as private hosts, inspect their DNS answers inside an assistant. Some host proxies return Fake-IP addresses in `198.18.0.0/15` or `2001:2::/48`. These addresses are not public, so the tools refuse them. Keep that check enabled and use real DNS answers.
+
+This stack includes an optional CoreDNS resolver that forwards public DNS over TLS with certificate-name verification. First inspect the web network with `docker network inspect mymuse-web`, then choose an unused address in its subnet and set these in `.env`:
+
+```dotenv
+COMPOSE_PROFILES=encrypted-dns
+MYMUSE_DNS_IP=an-unused-address-in-the-web-network
+```
+
+Replace the placeholder with an actual IP address. With another project name, inspect its `<project>-web` network. Run `docker compose -f compose.yml up -d dns gateway`. New assistant containers receive this DNS server through `WEB_DNS_SERVERS`; existing containers need recreation, normally by signing in again. Their data volumes remain. Docker continues resolving private service names such as `relay`. The resolver does not expose a host port; its upstreams are configured in `Corefile` using the [CoreDNS forward plugin](https://coredns.io/plugins/forward/).
+
 ## Background work and capacity {#background-work-and-capacity}
 
 This stack fixes `WEB_IDLE_STOP_S=0`. Closing a browser leaves its assistant running so the runtime can keep handling routines and goals. When the running limit is reached, another account gets `503 web_busy`; an existing assistant is not stopped to make room. Account and running counts both default to four. Increase them together after measuring your workload.

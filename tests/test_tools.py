@@ -569,6 +569,7 @@ def test_private_host_guard_refuses_every_non_global_address():
         "192.168.1.1",
         "169.254.169.254",
         "100.64.0.1",
+        "198.18.0.1",
         "0.0.0.0",
         "224.0.0.1",
         "240.0.0.1",
@@ -577,6 +578,7 @@ def test_private_host_guard_refuses_every_non_global_address():
         "::ffff:10.0.0.1",
         "fe80::1",
         "fd00::1",
+        "2001:2::1",
     ]
     for host in refused:
         assert _is_private_host(host), host

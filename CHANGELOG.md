@@ -4,6 +4,8 @@ All notable changes to nanoMuse. The format follows [Keep a Changelog](https://k
 
 ## [Unreleased]
 
+- Selected the existing You.com search connector for new MyMuse assistants and added optional encrypted DNS for proxy environments, keeping private-address checks enabled for public-page tools.
+
 - Renewed hosted assistants' Hub identity with their session credentials so signing in again does not leave Devices refused with `bad_device`; kept the identity across restarts of the same session.
 
 - Documented real SMTP verification for the local MyMuse deployment, including provider authorization codes and applying mail settings without restarting assistants.

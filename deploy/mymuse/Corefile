@@ -1,0 +1,7 @@
+.:53 {
+    errors
+    cache 300
+    forward . tls://223.5.5.5 tls://223.6.6.6 {
+        tls_servername dns.alidns.com
+    }
+}

@@ -75,9 +75,11 @@ services:
       WEB_RELAY_URL: http://relay-auth:8787
       WEB_RELAY_INTERNAL_URL: http://relay:8787
       WEB_NETWORK: ${COMPOSE_PROJECT_NAME:-mymuse}-web
+      WEB_DNS_SERVERS: ${MYMUSE_DNS_IP:-}
       WEB_IMAGE: ${MYMUSE_RUNTIME_IMAGE:-mymuse-runtime:local}
       WEB_SLUG_SALT: ${WEB_SLUG_SALT:?Set WEB_SLUG_SALT in .env}
       WEB_DEVICE_NAME: MyMuse Web
+      SESSION_EXTRA_ENV: NANOMUSE_SEARCH_PROVIDER=${MYMUSE_SEARCH_PROVIDER:-you}
       WEB_MAX_ACCOUNTS: ${WEB_MAX_ACCOUNTS:-4}
       WEB_MAX_RUNNING: ${WEB_MAX_RUNNING:-4}
       WEB_IDLE_STOP_S: "0"
@@ -101,6 +103,20 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+
+  dns:
+    profiles: [encrypted-dns]
+    image: coredns/coredns:1.15.0
+    restart: unless-stopped
+    logging: *logging
+    command: [-conf, /etc/coredns/Corefile]
+    read_only: true
+    mem_limit: 128m
+    volumes:
+      - ./Corefile:/etc/coredns/Corefile:ro
+    networks:
+      web:
+        ipv4_address: ${MYMUSE_DNS_IP:-}
 
   docker-proxy:
     image: tecnativa/docker-socket-proxy:0.3

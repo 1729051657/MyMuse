@@ -45,6 +45,21 @@ docker compose -f compose.yml ps
 
 Caddy 为每个账号域名[按需申请 TLS 证书](https://caddyserver.com/docs/automatic-https#on-demand-tls)。申请前调用 `/api/web/tls?domain=…`，只允许已登记账号的准确域名。普通泛域名 DNS 记录即可，无需 DNS 服务商令牌或泛域名证书。首次访问包含证书申请等待时间。证书机构的频率限制仍然适用，尚未验证公开注册规模下的签发能力。
 
+## 搜索与公开网页 {#search-and-public-pages}
+
+新助手默认使用已有的 You.com 搜索连接，无需搜索 API key。创建助手前可通过 `MYMUSE_SEARCH_PROVIDER` 选择其他受支持的服务；已有账号可在“连接 → 网页搜索”中修改。账号保存的选择优先。免密搜索有服务商额度限制，公开服务应使用自己的搜索 API key 或 SearXNG 实例。
+
+如果公开网页被当作内网地址拒绝，先在助手容器中检查域名的 DNS 解析。一些宿主机代理会返回 `198.18.0.0/15` 或 `2001:2::/48` 中的 Fake-IP 虚拟地址。这些地址不属于公网，工具会拒绝访问。保留这个检查，修正 DNS 解析即可。
+
+本部署提供可选的 CoreDNS 解析服务，通过 TLS 转发公开 DNS 查询并校验服务端名称。先执行 `docker network inspect mymuse-web` 查看 web 网络子网，再选一个未使用的地址，在 `.env` 中设置：
+
+```dotenv
+COMPOSE_PROFILES=encrypted-dns
+MYMUSE_DNS_IP=填写-web-网络内未使用的-IP
+```
+
+将占位内容替换成真实 IP。修改过项目名时，检查对应的 `<项目名>-web` 网络。执行 `docker compose -f compose.yml up -d dns gateway`。网关通过 `WEB_DNS_SERVERS` 给新助手容器设置 DNS；已有容器需要重建，通常重新登录即可，原数据卷会保留。`relay` 等内部服务名仍由 Docker 解析。DNS 服务不暴露宿主机端口，上游配置位于 `Corefile`，使用 [CoreDNS forward 插件](https://coredns.io/plugins/forward/)。
+
 ## 后台工作与容量 {#background-work-and-capacity}
 
 本部署固定使用 `WEB_IDLE_STOP_S=0`。关闭浏览器后助手继续运行，运行时可以继续处理例程和目标。达到运行上限时，新账号收到 `503 web_busy`，不会通过停止已有助手来腾位置。默认账号数和运行数均为四个，应根据实测工作负载一起调整。

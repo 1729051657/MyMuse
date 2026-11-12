@@ -174,6 +174,7 @@ class Settings:
     web_relay_url: str  # the relay as the gateway calls it for sign-in
     web_relay_internal_url: str  # the relay as the containers reach it (same Docker network)
     web_network: str  # a network with a way out, shared with the relay
+    web_dns_servers: tuple[str, ...]  # empty uses Docker's default resolver
     web_db: str
     web_image: str  # "" → the showcase image
     web_max_accounts: int
@@ -286,6 +287,9 @@ class Settings:
                 "WEB_RELAY_INTERNAL_URL", "http://nanomuse-relay:8787"
             ).rstrip("/"),
             web_network=_str("WEB_NETWORK", "nanomuse-web"),
+            web_dns_servers=tuple(
+                ip.strip() for ip in _str("WEB_DNS_SERVERS").split(",") if ip.strip()
+            ),
             web_db=_str("WEB_DB", "/data/web.db"),
             web_image=_str("WEB_IMAGE"),
             web_max_accounts=_int("WEB_MAX_ACCOUNTS", 60),

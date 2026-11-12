@@ -233,6 +233,8 @@ class DockerRunner:
                 "--tmpfs",
                 "/tmp:size=128m,mode=1777",
             ]
+            for server in self.s.web_dns_servers:
+                cmd += ["--dns", server]
             for volume, path in volumes.items():
                 cmd += ["-v", f"{volume}:{path}"]
             for key, value in env.items():
