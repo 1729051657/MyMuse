@@ -313,7 +313,7 @@ export const api = {
     request<Trigger>("/api/triggers", { method: "POST", body: JSON.stringify(body) }),
   fireTrigger: (id: string) => request<Trigger>(`/api/triggers/${id}/fire`, { method: "POST" }),
   cancelTrigger: (id: string) => request<Trigger>(`/api/triggers/${id}`, { method: "DELETE" }),
-  files: (limit = 300) => request<FileInfo[]>(`/api/files?limit=${limit}`),
+  files: (limit = 300, folder = "") => request<FileInfo[]>(`/api/files?limit=${limit}&folder=${encodeURIComponent(folder)}`),
   /** Raw contents of a workspace file, fetched with the token in a header (never in a URL). */
   fileText: async (path: string): Promise<string> => {
     const headers: Record<string, string> = {};
@@ -468,6 +468,9 @@ export const api = {
   firstrunPick: (name: string) => request<FirstRunView>("/api/firstrun/pick", json({ name })),
   firstrunDismiss: () => request<FirstRunView>("/api/firstrun/dismiss", json({})),
   // browser view
+  browserDesktop: () => request<{ available: boolean; workspace: string }>("/api/browser/desktop"),
+  browserClipboard: () => request<{ text: string }>("/api/browser/desktop/clipboard"),
+  setBrowserClipboard: (text: string) => request<{ ok: boolean }>("/api/browser/desktop/clipboard", { method: "PUT", body: JSON.stringify({ text }) }),
   browserControl: (thread: string, body: BrowserControl) =>
     request<{ url: string; title: string; hold?: HoldEvent | null }>(`/api/browser/${encodeURIComponent(thread)}/control`, json(body)),
   // push

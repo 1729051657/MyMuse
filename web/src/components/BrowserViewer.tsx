@@ -1,5 +1,5 @@
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Check, CornerDownLeft, Globe, Hand, Loader2, RefreshCw } from "lucide-react";
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useId, useRef, useState } from "react";
 import { androidApp, nativeTakeOver } from "../android";
 import { api, frameUrl } from "../api";
 import { useT } from "../i18n";
@@ -24,7 +24,27 @@ const LIVE_POLL_MS = 1000;
  * hands the page to you itself ("Your turn — sign in to Gmail") the same controls are on
  * and the same Done gives it back.
  */
-export function BrowserViewer({ thread, eventId, onClose }: { thread: string; eventId?: string; onClose: () => void }) {
+const DesktopViewer = lazy(() => import("./BrowserDesktopViewer"));
+type BrowserViewerProps = { thread: string; eventId?: string; onClose: () => void };
+
+export function BrowserViewer(props: BrowserViewerProps) {
+  const [desktop, setDesktop] = useState<{ available: boolean; workspace: string } | null>(null);
+  const t = useT();
+  useEffect(() => {
+    let live = true;
+    api.browserDesktop().then((info) => { if (live) setDesktop(info); }).catch(() => {
+      if (live) setDesktop({ available: false, workspace: "" });
+    });
+    return () => { live = false; };
+  }, []);
+  const loading = <Sheet open wide title={t("Browser")} onClose={props.onClose}><div className="flex h-64 items-center justify-center"><Loader2 className="animate-spin" /></div></Sheet>;
+  if (!desktop) return loading;
+  return desktop.available
+    ? <Suspense fallback={loading}><DesktopViewer thread={props.thread} workspace={desktop.workspace} onClose={props.onClose} /></Suspense>
+    : <BrowserFrameViewer {...props} />;
+}
+
+export function BrowserFrameViewer({ thread, eventId, onClose }: BrowserViewerProps) {
   const { state, toast } = useStore();
   const t = useT();
   // the hold for this chat's browser, if one is on: by you (Take over) or by the agent (hand_over)

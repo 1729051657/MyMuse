@@ -174,6 +174,7 @@ class Browser(BaseTool):
     egress: bool = True
 
     headless: bool = True
+    desktop: bool = False
     timeout_ms: int = 30_000
     workspace: Path = Path("./workspace")
     # "auto" | "playwright" | "device"
@@ -210,7 +211,7 @@ class Browser(BaseTool):
     def _pick_backend(self) -> BrowserBackend:
         """The backend for a new session. A running one is kept until it is closed."""
         current = self._backend
-        if current is not None and current.open:
+        if current is not None and (current.open or self.desktop):
             return current
         if self.backend_factory is not None:
             supplied = self.backend_factory()
@@ -241,6 +242,7 @@ class Browser(BaseTool):
             backend = PlaywrightBackend(
                 self.profile_dir,
                 headless=self.headless,
+                desktop=self.desktop,
                 timeout_ms=self.timeout_ms,
                 profile=profile_named(self.default_profile or "desktop"),
             )
@@ -378,14 +380,22 @@ class Browser(BaseTool):
         reason: str | None = None,
         **_: Any,
     ) -> ToolResult:
-        if action == "close":
+        if action == "close" and not self.desktop:
             await self.cleanup()
             return ToolResult(output="Browser closed.")
         if action == "hand_over":
             return await self._hand_over(reason)
         # the user has the page: wait for their Done, then look again before acting
-        if self.holds is not None and await self.holds.wait(self.holds.thread(), "browser"):
-            self._user_actions.append("used the page themselves")
+        if self.holds is not None:
+            threads = {self.holds.thread()}
+            if self.desktop:
+                threads.update(h.thread for h in self.holds.active() if h.tool == "browser")
+            for thread in threads:
+                if await self.holds.wait(thread, "browser"):
+                    self._user_actions.append("used the page themselves")
+        if action == "close":
+            await self.cleanup()
+            return ToolResult(output="Browser closed.")
         async with self.lock:
             try:
                 backend = self._pick_backend()

@@ -280,6 +280,9 @@ App 支持英语和简体中文。设置 → 应用语言保存在本设备浏�
 | POST | `/api/hub/ask` `{device, text?}` | 按设备 ID 或名称打开面向该设备的旁聊，不存在则创建。带 `text` 时作为首条消息交给目标设备执行，返回 `{thread, event}`；无此设备返回 404。 |
 | GET | `/api/bridge/tools` | 供智能体启动的命令使用，不供 App 使用。返回 `nanomuse-device list` 的 `{ok, tools[{name, description}]}`。使用 shell 签发的单次调用令牌 `X-Nanomuse-Bridge`，不使用 App 令牌；缺失返回 401，与 `POST /api/bridge/{kind}` 相同，见 [local-runtime.md](local-runtime.md)。 |
 | GET | `/api/browser/{thread}/frames/{id}.jpg` | 读取当前会话内存中的 JPEG 浏览器画面。 |
+| GET | `/api/browser/desktop` | 返回可选云端桌面的 `{available, workspace}`。 |
+| GET, PUT | `/api/browser/desktop/clipboard` | 读取或写入账号的 Unicode 剪贴板，内容为 `{text}`，每次写入最多 65,536 个字符。 |
+| WS | `/api/browser/desktop/ws` | 首帧发送 `{"kind":"auth","token":…}`，收到 `{"kind":"ready"}` 后传输二进制 RFB 消息。拒绝 URL 查询参数中的令牌。 |
 | POST | `/api/browser/{thread}/control` `{action: click(x,y as 0–1 fractions) · type(text) · key(key) · scroll(dy) · navigate(url) · look · handed_back}` | 由用户控制智能体浏览器。Android 关闭接管面板时发送 `handed_back`，触发新画面并通知智能体。浏览器未开启返回 `409`，需先导航到 URL。 |
 | GET | `/api/push` | 返回 `{available, public_key, subscriptions, devices[]}`，提供订阅需要的 VAPID 公钥。 |
 | POST | `/api/push/subscribe` `{subscription}`、`/api/push/unsubscribe` `{endpoint}` | 注册或删除本设备 `PushSubscription`。 |
@@ -287,6 +290,8 @@ App 支持英语和简体中文。设置 → 应用语言保存在本设备浏�
 | WS | `/ws` | 实时消息连接，首帧为 `{"kind": "auth", "token": …}`。 |
 
 ### WebSocket {#websocket}
+
+`GET /api/files?folder=downloads` 或 `folder=attachments` 可将原有文件列表限定到工作区子目录。工作区外的路径返回 403。上传和签名下载继续复用 App 的文件接口。
 
 客户端连接后十秒内必须发送 `{"kind": "auth", "token": "…"}`，否则以 4401 关闭，错误令牌同样处理。验证通过后，服务器发送 `{"kind": "hello", "state": …}`，内容与 `/api/state` 一致。之后通过下表持续推送变化：
 

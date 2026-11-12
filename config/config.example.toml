@@ -240,6 +240,7 @@ hook_min_seconds = 10
 [browser]
 enabled = false          # pip install "nanomuse[browser]" && playwright install chromium
 headless = true
+desktop = false          # Linux cloud desktop, bundled by the MyMuse browser image
 timeout_ms = 30000
 
 # ------------------------------------------------------------------------------

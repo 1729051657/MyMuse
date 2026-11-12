@@ -12,6 +12,7 @@ from typing import Any
 
 import pytest
 
+from nanomuse.agent.holds import Holds
 from nanomuse.phone import PhoneLink
 from nanomuse.phone.link import DeviceError
 from nanomuse.schema import RiskLevel
@@ -25,6 +26,22 @@ from nanomuse.tools.browser_backends import (
 )
 
 JPEG = b"\xff\xd8\xff\xe0" + b"\x00" * 16 + b"\xff\xd9"
+
+
+@pytest.mark.parametrize("action", ["extract", "close"])
+async def test_shared_desktop_waits_for_a_manual_hold_in_another_chat(tmp_path: Path, action: str):
+    backend = FakeBackend()
+    tool, _ = tool_with(backend, tmp_path)
+    tool.desktop = True
+    tool.holds = Holds(thread_of=lambda: "agent-chat")
+    tool.holds.open("manual-chat", "browser", by="user")
+    work = asyncio.create_task(tool.execute(action=action))
+    await asyncio.sleep(0)
+    assert not work.done() and backend.open
+    assert not backend.calls
+    tool.holds.release("manual-chat", "browser")
+    assert (await work).ok
+
 
 ELEMENTS = [
     {"i": 0, "tag": "a", "type": "", "text": "Sign in", "href": "/login"},

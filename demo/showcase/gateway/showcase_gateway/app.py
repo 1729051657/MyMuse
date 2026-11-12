@@ -331,6 +331,7 @@ def create_app(
     session_router = Router(
         routes=[
             WebSocketRoute("/ws", session_ws),
+            WebSocketRoute("/api/browser/desktop/ws", session_ws),
             Route("/__wake", session_wake, methods=["POST"]),
             Route("/{path:path}", session_http, methods=_METHODS),
         ]

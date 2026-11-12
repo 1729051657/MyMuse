@@ -253,7 +253,8 @@ async def test_a_lapsed_key_means_signing_in_again(web):
         assert runner.kept[name]["env"]["NANOMUSE_CLOUD_KEY"] == "nm_sess2"
 
 
-def test_the_socket_s_first_frame_wakes_a_slept_muse(web, monkeypatch):
+@pytest.mark.parametrize("socket_path", ["/ws", "/api/browser/desktop/ws"])
+def test_the_socket_s_first_frame_wakes_a_slept_muse(web, monkeypatch, socket_path):
     """The web app opens its socket without the token in the address and sends it in the
     first frame; a slept Muse is woken on that frame and the frame goes on to the runtime."""
     import showcase_gateway.app as app_module
@@ -283,11 +284,11 @@ def test_the_socket_s_first_frame_wakes_a_slept_muse(web, monkeypatch):
         assert runner.kept[name]["running"] is False
 
         # no token, or a wrong one: 4404, nothing starts
-        with tc.websocket_connect("/ws", headers={"host": host}) as ws:
+        with tc.websocket_connect(socket_path, headers={"host": host}) as ws:
             ws.send_text(json.dumps({"kind": "hello"}))
             closed = ws.receive()
         assert closed["type"] == "websocket.close" and closed["code"] == 4404
-        with tc.websocket_connect("/ws", headers={"host": host}) as ws:
+        with tc.websocket_connect(socket_path, headers={"host": host}) as ws:
             ws.send_text(json.dumps({"kind": "auth", "token": "nope"}))
             closed = ws.receive()
         assert closed["code"] == 4404
@@ -295,17 +296,17 @@ def test_the_socket_s_first_frame_wakes_a_slept_muse(web, monkeypatch):
 
         # the account's token in the first frame: woken, and the frame travels on
         frame = json.dumps({"kind": "auth", "token": token})
-        with tc.websocket_connect("/ws", headers={"host": host}) as ws:
+        with tc.websocket_connect(socket_path, headers={"host": host}) as ws:
             ws.send_text(frame)
             closed = ws.receive()
         assert closed["type"] == "websocket.close" and closed["code"] == 1000
         assert runner.kept[name]["running"] is True and runner.kept[name]["starts"] == 2
-        assert relayed == [{"url": "ws://10.0.1.1:8787/ws", "first": frame, "accepted": True}]
+        assert relayed == [{"url": f"ws://10.0.1.1:8787{socket_path}", "first": frame, "accepted": True}]
 
         # up already: relayed straight away, the runtime does its own first-frame check
-        with tc.websocket_connect("/ws", headers={"host": host}) as ws:
+        with tc.websocket_connect(socket_path, headers={"host": host}) as ws:
             closed = ws.receive()
-        assert relayed[-1] == {"url": "ws://10.0.1.1:8787/ws", "first": None, "accepted": False}
+        assert relayed[-1] == {"url": f"ws://10.0.1.1:8787{socket_path}", "first": None, "accepted": False}
 
 
 async def test_a_restarted_gateway_finds_the_running_muses(web):

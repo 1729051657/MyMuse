@@ -74,7 +74,21 @@ timestamped filename. Shots taken within the same second get separate names such
 
 ## Logging in
 
-In the web console, the **Browser** button at the top of the chat opens the existing browser controls directly, even before the agent has opened a page. Enter a URL and choose **Go**, click the picture to focus a field, then use the text input or key buttons below it. **Done** returns control to the agent. The viewer follows fresh frames while you have control, including when opened from an older card, and uses a wider dialog on desktop screens.
+In the web console, the **Browser** button at the top of the chat opens the browser directly, even before the agent has opened a page.
+
+### MyMuse cloud desktop
+
+MyMuse's image includes a visible Chromium desktop. Its tabs, address bar, navigation, menus, text selection, right-click and mouse dragging work inside the viewer. The top toolbar offers full screen and shortcuts such as new tab, address bar, find, zoom and reload. **Clipboard / Chinese input** moves text between your device and the focused cloud field, including Chinese text. Use Ctrl shortcuts for the Linux browser, or send them from **Browser shortcuts**.
+
+**Files** uploads files through the existing workspace interface. In a website's file picker, find them under **Home/Uploads**. Website downloads are saved in `<workspace>/downloads`; **Files** lets you download them to your own device. Uploads and downloads belong to this account's persistent workspace.
+
+**Done, hand back** closes the viewer and lets the agent continue on the tab you selected. While a cloud desktop is held, browser actions in all chats of that account wait. Closing your local browser or losing the connection leaves the remote browser in its container; **Reconnect** reattaches to it. Each account keeps its own Chromium profile under `<workspace>/browser-profile`, including cookies and site storage. The desktop restores its session and tabs after a graceful assistant restart or container recreation with the same volumes. A website can still expire or revoke its session, requiring another login. Audio, microphones and cameras are not forwarded to the local device.
+
+For another Linux container build, use `docker build --build-arg WITH_BROWSER_DESKTOP=1 -t nanomuse:desktop .`. `NANOMUSE_BROWSER_DESKTOP=1` enables the desktop and visible Chromium, with Playwright 1.60 or newer attached without overriding its native focus and preferences. The RFB listener stays on container loopback; the web app connects through the authenticated account WebSocket, using the same first-frame token protocol as chat.
+
+### Frame viewer
+
+Servers without the cloud desktop use the existing frame viewer. Enter a URL and choose **Go**, click the picture to focus a field, then use the text input or key buttons below it. **Done** returns control to the agent. The viewer follows fresh frames while you have control, including when opened from an older card.
 
 Browser control is independent of this computer's desktop hands. A hosted Chromium can run with the desktop hands off. If a Chromium page crashes, the next refresh reopens its URL using the same persistent profile. Resource-heavy pages still need enough container and host memory.
 
@@ -87,7 +101,7 @@ While the page is yours (a *hold*), every browser action of that conversation wa
 
 Passwords go to the website, never through the model: what the model sees is the frame after you are done. The agent asks in words (`ask_user`) only for things it needs to know (which account, which date), never for a password or a code.
 
-Cookies persist. On the server the Playwright profile is a real Chromium profile directory; on the phone the WebView's cookie store is flushed to disk after every navigation and `fetch`. Session cookies (the kind without an expiry, which a browser drops when it closes) do not survive a server restart on either side, so a site that uses only those asks again after `nanomuse serve` restarts; most sites set a longer "remember me" cookie once you tick the box.
+Cookies persist. On the server the Playwright profile is a real Chromium profile directory; on the phone the WebView's cookie store is flushed to disk after every navigation and `fetch`. The cloud desktop restores session cookies with Chromium's restored session. Other backends may drop session cookies on restart; most sites set a longer "remember me" cookie once you tick the box.
 
 ### What does not work, and why
 

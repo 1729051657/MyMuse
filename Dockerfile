@@ -16,6 +16,7 @@ LABEL org.opencontainers.image.licenses="GPL-3.0-or-later" \
 ARG PIP_INDEX_URL=https://pypi.org/simple
 # 1 = bundle Chromium for the browser tool
 ARG WITH_BROWSER=0
+ARG WITH_BROWSER_DESKTOP=0
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -36,7 +37,7 @@ COPY --chown=muse:muse pyproject.toml README.md LICENSE ./
 COPY --chown=muse:muse nanomuse ./nanomuse
 COPY --chown=muse:muse config/config.example.toml ./config/config.example.toml
 
-RUN if [ "$WITH_BROWSER" = "1" ]; then \
+RUN if [ "$WITH_BROWSER" = "1" ] || [ "$WITH_BROWSER_DESKTOP" = "1" ]; then \
       sed -i 's|http://deb.debian.org|https://deb.debian.org|g' /etc/apt/sources.list.d/debian.sources \
       && apt-get update \
       && apt-get install -y --no-install-recommends libatomic1 \
@@ -50,8 +51,15 @@ RUN if [ "$WITH_BROWSER" = "1" ]; then \
  && ln -s /workspace /app/workspace \
  && cp config/config.example.toml config/config.toml
 
+RUN if [ "$WITH_BROWSER_DESKTOP" = "1" ]; then \
+      apt-get update \
+      && apt-get install -y --no-install-recommends tigervnc-standalone-server openbox xclip fonts-noto-cjk libgtk-3-0 \
+      && rm -rf /var/lib/apt/lists/*; \
+    fi
+
 # the browser tool is on in the browser image ("1"); anything else leaves config.toml alone
 ENV NANOMUSE_BROWSER_ENABLED=${WITH_BROWSER}
+ENV NANOMUSE_BROWSER_DESKTOP=${WITH_BROWSER_DESKTOP}
 
 USER muse
 VOLUME ["/data", "/workspace"]

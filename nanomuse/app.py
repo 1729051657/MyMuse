@@ -443,6 +443,7 @@ class NanoMuseApp:
         s = self.settings
         tool = Browser(
             headless=s.browser.headless,
+            desktop=s.browser.desktop,
             timeout_ms=s.browser.timeout_ms,
             workspace=s.agent.workspace,
             backend_mode=s.browser.backend,

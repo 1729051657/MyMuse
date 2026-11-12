@@ -177,6 +177,8 @@ Each file carries the attribution line; rewritten in nanoMuse's structure (the o
 
 ### Python and JavaScript dependencies
 
+The web console's cloud browser embeds the unmodified [noVNC 1.7.0](https://github.com/novnc/noVNC/tree/v1.7.0) core from npm (`@novnc/novnc`), under **MPL-2.0**, with its BSD and OFL notices retained in `web/public/licenses/novnc/` and the generated web distribution. The MyMuse desktop image installs [TigerVNC](https://tigervnc.org/) (**GPL-2.0-or-later**), [Openbox](http://openbox.org/) (**GPL-2.0-or-later**), xclip (**GPL-2.0-or-later**), GTK 3 (**LGPL-2.1-or-later**) and Noto CJK fonts (**OFL-1.1**) from Debian; their package notices remain in the image under `/usr/share/doc/`.
+
 Installed from PyPI and npm, not vendored; each carries its own license: openai, pydantic, httpx, typer, rich, loguru, cryptography, tenacity, ddgs, beautifulsoup4, html2text, mcp, fastapi, uvicorn, qrcode, pywebpush, python-dateutil, pillow, pypdf, zstandard (Python); lark-oapi, dingtalk-stream, wecom-aibot-sdk-python when the `channels` extras are installed; react, react-dom, react-markdown, remark-gfm, lucide-react, tailwindcss, vite (web); `@computer-use/nut-js`, `@computer-use/node-mac-permissions`, `@computer-use/mac-screen-capture-permissions` (desktop, above). `pip show <name>` / `npm view <name> license` for any of them.
 
 ### Tools called, not bundled

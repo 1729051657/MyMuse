@@ -49,6 +49,7 @@ from nanomuse.reminders import Reminder
 from nanomuse.schema import Attachment, Message, Role
 from nanomuse.sentinel.grants import normalize_scope
 from nanomuse.server import firstrun
+from nanomuse.server.browser_desktop import BrowserDesktop
 from nanomuse.server.connections import Connections, check_base_url
 from nanomuse.server.events import (
     MAIN_THREAD,
@@ -396,6 +397,9 @@ class MuseService:
 
     def __init__(self, settings: Settings, llm: BaseLLM | None = None):
         self.settings = settings
+        self.browser_desktop = (
+            BrowserDesktop(settings.agent.workspace.resolve()) if settings.browser.desktop else None
+        )
         settings.ensure_dirs()
         self.data_dir: Path = settings.data_dir
         self.threads_dir = self.data_dir / "threads"
@@ -504,6 +508,8 @@ class MuseService:
         if self._started:
             return
         started = time.monotonic()
+        if self.browser_desktop is not None:
+            await self._step("browser desktop", self.browser_desktop.start(), 15)
         await self._step("tools", self.app.start(), 90)
         self._started = True
         self._recover_deliveries()
@@ -578,6 +584,8 @@ class MuseService:
             await self.hub.stop()
             await self.connections.close()
             await self.app.close()
+        if self.browser_desktop is not None:
+            await self.browser_desktop.stop()
         self._started = False
 
     # ------------------------------------------------------------------ token / profile
@@ -1505,11 +1513,15 @@ class MuseService:
         elif action == "handed_back":
             released = self.app.holds.release(thread, "browser")
             hold = released.to_event() if released is not None else None
-        if action in ("take_over", "handed_back") and (tool is None or not tool.open):
+        if action == "take_over" and self.browser_desktop is not None:
+            await self.browser_desktop.start()
+        if action in ("take_over", "handed_back") and (
+            tool is None or (not tool.open and self.browser_desktop is None)
+        ):
             return {"url": "", "title": "", "hold": hold}
         if tool is None:
             raise LookupError("the browser tool is not enabled")
-        if action not in ("look", "navigate") and not tool.open:
+        if action not in ("look", "navigate", "take_over", "handed_back") and not tool.open:
             raise LookupError("the browser is not open right now; open a URL first")
         result = await tool.user_action(
             action,
@@ -2598,12 +2610,13 @@ class MuseService:
             raise PermissionError("path outside the workspace")
         return target
 
-    def list_files(self, limit: int = 200) -> list[dict[str, Any]]:
+    def list_files(self, limit: int = 200, folder: str = "") -> list[dict[str, Any]]:
         ws = self.workspace()
+        root = self.resolve_workspace_path(folder) if folder else ws
         out: list[dict[str, Any]] = []
-        if not ws.exists():
+        if not root.exists():
             return out
-        for p in ws.rglob("*"):
+        for p in root.rglob("*"):
             if not p.is_file() or any(part.startswith(".") for part in p.relative_to(ws).parts):
                 continue
             try:

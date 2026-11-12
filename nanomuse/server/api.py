@@ -89,6 +89,7 @@ from nanomuse.hub.client import HubError
 from nanomuse.llm.chatgpt import ChatGPTError
 from nanomuse.logger import logger
 from nanomuse.server import data_export, tickets
+from nanomuse.server.browser_desktop import proxy_desktop
 from nanomuse.server.channels_api import install_channels
 from nanomuse.server.events import MAIN_THREAD
 from nanomuse.server.service import MuseService, goal_to_dict
@@ -392,6 +393,10 @@ class BrowserControlBody(BaseModel):
     key: str | None = Field(default=None, max_length=40)
     dy: float | None = Field(default=None, ge=-5000, le=5000)
     url: str | None = Field(default=None, max_length=2000)
+
+
+class ClipboardBody(BaseModel):
+    text: str = Field(max_length=65536)
 
 
 class HoldBody(BaseModel):
@@ -1950,8 +1955,13 @@ def create_app(settings: Settings, service: MuseService | None = None) -> FastAP
         return svc.upcoming()
 
     @app.get("/api/files", dependencies=dep)
-    async def list_files(limit: int = Query(200, ge=1, le=2000)) -> list[dict[str, Any]]:
-        return svc.list_files(limit)
+    async def list_files(
+        limit: int = Query(200, ge=1, le=2000), folder: str = Query("", max_length=2000)
+    ) -> list[dict[str, Any]]:
+        try:
+            return svc.list_files(limit, folder)
+        except PermissionError as exc:
+            raise HTTPException(403, str(exc)) from exc
 
     @app.post("/api/files/upload", dependencies=dep)
     async def upload_file(
@@ -2034,6 +2044,44 @@ def create_app(settings: Settings, service: MuseService | None = None) -> FastAP
         )
 
     # ------------------------------------------------------------------ websocket
+    @app.get("/api/browser/desktop", dependencies=dep)
+    async def browser_desktop_info() -> dict[str, Any]:
+        return {
+            "available": svc.browser_desktop is not None and svc.browser is not None,
+            "workspace": str(svc.workspace()),
+        }
+
+    @app.get("/api/browser/desktop/clipboard", dependencies=dep)
+    async def browser_clipboard_read() -> dict[str, str]:
+        if svc.browser_desktop is None:
+            raise HTTPException(404, "the browser desktop is not enabled")
+        return {"text": await svc.browser_desktop.read_clipboard()}
+
+    @app.put("/api/browser/desktop/clipboard", dependencies=dep)
+    async def browser_clipboard_write(body: ClipboardBody) -> dict[str, bool]:
+        if svc.browser_desktop is None:
+            raise HTTPException(404, "the browser desktop is not enabled")
+        await svc.browser_desktop.write_clipboard(body.text)
+        return {"ok": True}
+
+    @app.websocket("/api/browser/desktop/ws")
+    async def browser_desktop_socket(ws: WebSocket) -> None:
+        await ws.accept()
+        if "token" in ws.query_params or not await _ws_first_frame_auth(ws, svc.token):
+            await ws.close(code=4401)
+            return
+        if svc.browser_desktop is None or svc.browser is None:
+            await ws.close(code=4404)
+            return
+        try:
+            await svc.browser_desktop.start()
+            await proxy_desktop(ws)
+        except asyncio.CancelledError:
+            pass
+        except (OSError, WebSocketDisconnect, RuntimeError):
+            with contextlib.suppress(RuntimeError):
+                await ws.close(code=1011)
+
     @app.websocket("/ws")
     async def websocket(ws: WebSocket) -> None:
         if "token" in ws.query_params:
@@ -2157,7 +2205,7 @@ async def _ws_first_frame_auth(ws: WebSocket, token: str) -> bool:
     if not isinstance(data, dict) or data.get("kind") != "auth":
         return False
     given = str(data.get("token") or "")
-    return bool(given) and secrets.compare_digest(given.encode(), token.encode())
+    return not token or (bool(given) and secrets.compare_digest(given.encode(), token.encode()))
 
 
 async def _handle_ws_message(

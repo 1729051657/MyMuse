@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "../api";
 import { setLocaleSetting } from "../i18n";
 import type { BrowserEvent, HoldEvent } from "../types";
-import { BrowserViewer } from "./BrowserViewer";
+import { BrowserFrameViewer as BrowserViewer } from "./BrowserViewer";
 
 (globalThis as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true;
 

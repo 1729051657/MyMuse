@@ -16,7 +16,7 @@ No MobileGym build or dataset is used. The project retains nanoMuse's licence an
 
 File links in replies, including `/workspace/` and `sandbox:/workspace/` paths, open the existing workspace viewer when they refer to a file generated in that conversation. Saved conversations keep the same file links when reopened.
 
-The chat's **Browser** button opens the hosted browser directly for navigation, clicking, typing and login. It uses Chromium inside the account's container, independently of desktop hands. The default memory limit is 2 GB per assistant; make sure the Docker host has room for the number of browsers you run. A container limit alone does not reserve host memory.
+The chat's **Browser** button opens a complete Chromium desktop inside the account's container, independently of desktop hands. Native tabs, navigation, mouse and keyboard, full screen, browser shortcuts, Unicode clipboard and workspace file transfers are available. The agent resumes on the tab you selected. Each account's browser profile and login state persist with its workspace; websites may still expire their sessions. See [the browser guide](browser.md#logging-in). The default memory limit is 2 GB per assistant; a container limit does not reserve host memory for simultaneous browsers.
 
 ## Start the service {#start-the-service}
 

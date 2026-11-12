@@ -49,7 +49,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-browser = ["playwright>=1.45"]
+browser = ["playwright>=1.60"]
 # this computer's screen and hands (docs/every-device.md); xdotool works without them on X11
 hands = [
     "mss>=9",

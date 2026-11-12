@@ -21,6 +21,7 @@ a signed-in request without driving the screen).
 
 from __future__ import annotations
 
+import asyncio
 import base64
 import json
 from abc import ABC, abstractmethod
@@ -237,9 +238,11 @@ class PlaywrightBackend(BrowserBackend):
         headless: bool = True,
         timeout_ms: int = 30_000,
         profile: BrowserProfile | None = None,
+        desktop: bool = False,
     ):
         self.profile_dir = profile_dir
         self.headless = headless
+        self.desktop = desktop
         self.timeout_ms = timeout_ms
         self.profile = profile or PROFILES["desktop"]
         # where a file the page offers ends up: <workspace>/downloads next to the profile
@@ -247,6 +250,8 @@ class PlaywrightBackend(BrowserBackend):
         self._pw: Any = None
         self._context: Any = None
         self._page: Any = None
+        self._desktop_browser: Any = None
+        self._desktop_process: asyncio.subprocess.Process | None = None
         self._url_guard: Callable[[str], Awaitable[bool]] | None = None
         self._guard_installed = False
         self._blocked_url = ""
@@ -269,6 +274,8 @@ class PlaywrightBackend(BrowserBackend):
         if reopen is not None:
             await self.close()
         if self.open:
+            if self.desktop:
+                await self._follow_active_tab()
             return
         from playwright.async_api import async_playwright
 
@@ -276,25 +283,130 @@ class PlaywrightBackend(BrowserBackend):
             self._pw = await async_playwright().start()
         if self._context is None:
             self.profile_dir.mkdir(parents=True, exist_ok=True)
-            self._context = await self._pw.chromium.launch_persistent_context(
-                str(self.profile_dir),
-                headless=self.headless,
-                viewport=self.profile.viewport,
-                user_agent=self.profile.user_agent or None,
-                is_mobile=self.profile.mobile,
-                has_touch=self.profile.mobile,
-                device_scale_factor=self.profile.scale,
-                locale=None,
-            )
+            if self.desktop:
+                self._context = await self._launch_desktop()
+            else:
+                self._context = await self._pw.chromium.launch_persistent_context(
+                    str(self.profile_dir),
+                    headless=self.headless,
+                    viewport=self.profile.viewport,
+                    user_agent=self.profile.user_agent or None,
+                    is_mobile=self.profile.mobile,
+                    has_touch=self.profile.mobile,
+                    device_scale_factor=self.profile.scale,
+                    locale=None,
+                )
             self._context.set_default_timeout(self.timeout_ms)
+            self._context.on("close", self._on_context_close)
+            self._context.on("page", self._bind_page)
             await self._install_url_guard()
+            if self.desktop:
+                self.downloads_dir.mkdir(parents=True, exist_ok=True)
+                page = (
+                    self._context.pages[0]
+                    if self._context.pages
+                    else await self._context.new_page()
+                )
+                cdp = await self._context.new_cdp_session(page)
+                await cdp.send(
+                    "Browser.setDownloadBehavior",
+                    {"behavior": "allow", "downloadPath": str(self.downloads_dir)},
+                )
+                await cdp.detach()
         pages = self._context.pages
         self._page = pages[0] if pages else await self._context.new_page()
-        self._page.set_default_timeout(self.timeout_ms)
-        self._page.on("download", self._on_download)
-        self._page.on("crash", self._on_crash)
+        for page in self._context.pages:
+            self._bind_page(page)
+        if self.desktop:
+            await self._follow_active_tab()
         if reopen and reopen != "about:blank":
             await self.goto(reopen)
+
+    async def _launch_desktop(self) -> Any:
+        await self._stop_desktop()
+        port_file = self.profile_dir / "DevToolsActivePort"
+        port_file.unlink(missing_ok=True)
+        self._desktop_process = await asyncio.create_subprocess_exec(
+            self._pw.chromium.executable_path,
+            f"--user-data-dir={self.profile_dir}",
+            "--remote-debugging-port=0",
+            "--remote-debugging-address=127.0.0.1",
+            "--no-sandbox",
+            "--disable-dev-shm-usage",
+            "--no-first-run",
+            "--no-default-browser-check",
+            "--disable-infobars",
+            "--password-store=basic",
+            "--use-mock-keychain",
+            "--start-maximized",
+            "--restore-last-session",
+            stdout=asyncio.subprocess.DEVNULL,
+            stderr=asyncio.subprocess.DEVNULL,
+        )
+        for _ in range(100):
+            if self._desktop_process.returncode is not None:
+                raise RuntimeError("the cloud browser could not start")
+            if port_file.exists():
+                lines = port_file.read_text().splitlines()
+                if len(lines) >= 2:
+                    break
+            await asyncio.sleep(0.05)
+        else:
+            raise RuntimeError("the cloud browser did not become ready")
+        # Keep Chrome's real focus, native downloads and user preferences intact.
+        self._desktop_browser = await self._pw.chromium.connect_over_cdp(
+            f"http://127.0.0.1:{lines[0]}", no_defaults=True
+        )
+        return self._desktop_browser.contexts[0]
+
+    async def _stop_desktop(self) -> None:
+        proc = self._desktop_process
+        if proc is not None and proc.returncode is None:
+            proc.terminate()
+            try:
+                await asyncio.wait_for(proc.wait(), 5)
+            except TimeoutError:
+                proc.kill()
+                await proc.wait()
+        self._desktop_process = None
+        if self._desktop_browser is not None:
+            await self._desktop_browser.close()
+            self._desktop_browser = None
+
+    def _bind_page(self, page: Any) -> None:
+        page.set_default_timeout(self.timeout_ms)
+        page.remove_listener("download", self._on_download)
+        page.remove_listener("crash", self._on_crash)
+        if self.desktop:
+            page.remove_listener("dialog", self._on_dialog)
+            page.on("dialog", self._on_dialog)
+        else:
+            page.on("download", self._on_download)
+        page.on("crash", self._on_crash)
+
+    def _on_dialog(self, _: Any) -> None:
+        # A listener keeps Playwright from dismissing the native dialog before the user sees it.
+        logger.debug("browser: native dialog awaiting the user")
+
+    def _on_context_close(self, _: Any) -> None:
+        self._context = self._page = None
+        self._guard_installed = False
+
+    async def _follow_active_tab(self) -> None:
+        visible = None
+        for page in reversed(self._context.pages):
+            if not page.is_closed():
+                state = await page.evaluate(
+                    "() => ({visible: document.visibilityState === 'visible', focused: document.hasFocus(), width: innerWidth, height: innerHeight})"
+                )
+                if state["focused"]:
+                    visible = (page, state)
+                    break
+                if state["visible"] and visible is None:
+                    visible = (page, state)
+        if visible is not None:
+            self._page, state = visible
+            self.profile = replace(self.profile, width=state["width"], height=state["height"])
 
     def _on_crash(self, page: Any) -> None:
         self._crashed_url = str(page.url)
@@ -413,7 +525,9 @@ class PlaywrightBackend(BrowserBackend):
 
     async def close(self) -> None:
         try:
-            if self._context is not None:
+            if self.desktop:
+                await self._stop_desktop()
+            elif self._context is not None:
                 await self._context.close()
             if self._pw is not None:
                 await self._pw.stop()

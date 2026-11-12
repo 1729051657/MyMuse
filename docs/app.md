@@ -292,6 +292,9 @@ Everything the app does goes through this API, so another front-end (a Telegram 
 | POST | `/api/hub/ask` `{device, text?}` | the side chat addressed to a device (by id or name; created if needed) and, with `text`, the first message in it, which runs on that device: `{thread, event}`; 404 for no such device |
 | GET | `/api/bridge/tools` | for a command the agent runs, not the app: the device tools `nanomuse-device list` prints, `{ok, tools[{name, description}]}`. No app token; the call token the shell tool minted comes in `X-Nanomuse-Bridge` (401 otherwise), as for `POST /api/bridge/{kind}` ([local-runtime.md](local-runtime.md)) |
 | GET | `/api/browser/{thread}/frames/{id}.jpg` | a browser frame (JPEG, in memory for the current session) |
+| GET | `/api/browser/desktop` | `{available, workspace}` for the optional cloud desktop |
+| GET, PUT | `/api/browser/desktop/clipboard` | read `{text}` or write `{text}` to the account's Unicode clipboard, at most 65,536 characters per write |
+| WS | `/api/browser/desktop/ws` | first send `{"kind":"auth","token":…}`; after `{"kind":"ready"}`, exchange binary RFB messages. Query-string tokens are refused. |
 | POST | `/api/browser/{thread}/control` `{action: click(x,y as 0–1 fractions) · type(text) · key(key) · scroll(dy) · navigate(url) · look · handed_back}` | you drive the agent's browser; `handed_back` is what the Android app sends when you close its take-over sheet (a fresh frame, the agent told); `409` when the browser is not open (open a URL first) |
 | GET | `/api/push` | `{available, public_key, subscriptions, devices[]}`: the VAPID public key to subscribe with |
 | POST | `/api/push/subscribe` `{subscription}`, `/api/push/unsubscribe` `{endpoint}` | register / drop this device's `PushSubscription` |
@@ -299,6 +302,8 @@ Everything the app does goes through this API, so another front-end (a Telegram 
 | WS | `/ws` | live events; the first frame is `{"kind": "auth", "token": …}` |
 
 ### WebSocket
+
+`GET /api/files?folder=downloads` or `folder=attachments` filters the existing file list to a workspace subdirectory. Paths outside the workspace return 403. File upload and signed download endpoints are shared with the rest of the app.
 
 The client's first frame is `{"kind": "auth", "token": "…"}` (within ten seconds, or the socket closes with 4401, as it does for a wrong token). Then the server sends `{"kind": "hello", "state": …}` (the same payload as `/api/state`). Then:
 

@@ -470,6 +470,7 @@ class BrowserSettings(BaseModel):
 
     enabled: bool = False
     headless: bool = True
+    desktop: bool = False
     timeout_ms: int = 30_000
     # "auto": Playwright when installed, else the phone's WebView; or "playwright" / "device"
     backend: Literal["auto", "playwright", "device"] = "auto"
@@ -908,6 +909,10 @@ def _apply_env_overrides(raw: dict[str, Any]) -> None:
         raw.setdefault("browser", {}).setdefault("enabled", True)
     if val := os.environ.get("NANOMUSE_BROWSER_BACKEND"):
         raw.setdefault("browser", {})["backend"] = val
+    if os.environ.get("NANOMUSE_BROWSER_DESKTOP", "").strip().lower() in ("1", "true", "yes", "on"):
+        raw.setdefault("browser", {}).update(
+            enabled=True, headless=False, desktop=True, backend="playwright"
+        )
     # a hosted runtime (nanoMuse Web) is told where its relay is and what to call itself
     if val := os.environ.get("NANOMUSE_CLOUD_BASE_URL"):
         raw.setdefault("cloud", {})["base_url"] = val.rstrip("/")
