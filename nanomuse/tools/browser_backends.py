@@ -362,7 +362,12 @@ class PlaywrightBackend(BrowserBackend):
     async def _stop_desktop(self) -> None:
         proc = self._desktop_process
         if proc is not None and proc.returncode is None:
-            proc.terminate()
+            if self._desktop_browser is not None and self._desktop_browser.is_connected():
+                # SIGTERM can exit before Chromium flushes newly created session cookies.
+                cdp = await self._desktop_browser.new_browser_cdp_session()
+                await cdp.send("Browser.close")
+            elif self._desktop_browser is None:
+                proc.terminate()
             try:
                 await asyncio.wait_for(proc.wait(), 5)
             except TimeoutError:

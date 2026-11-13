@@ -5,7 +5,7 @@ import socketserver
 import threading
 from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, Mock
 
 import pytest
 from fastapi.testclient import TestClient
@@ -17,6 +17,7 @@ from nanomuse.server import browser_desktop as desktop_module
 from nanomuse.server import create_app
 from nanomuse.server.browser_desktop import BrowserDesktop
 from nanomuse.server.service import MuseService
+from nanomuse.tools.browser_backends import PlaywrightBackend
 
 
 @pytest.fixture
@@ -111,3 +112,26 @@ async def test_clipboard_sends_utf8_to_the_operating_system(tmp_path: Path, monk
     child.communicate.assert_awaited_once_with("中文粘贴与登录状态".encode())
     child.communicate.return_value = ("从云端复制".encode(), b"")
     assert await desktop.read_clipboard() == "从云端复制"
+
+
+async def test_desktop_shutdown_lets_chromium_save_its_session(tmp_path: Path) -> None:
+    cdp = SimpleNamespace(send=AsyncMock())
+    browser = SimpleNamespace(
+        is_connected=lambda: True,
+        new_browser_cdp_session=AsyncMock(return_value=cdp),
+        close=AsyncMock(),
+    )
+    process = SimpleNamespace(
+        returncode=None, terminate=Mock(), kill=Mock(), wait=AsyncMock(return_value=0)
+    )
+    backend = PlaywrightBackend(tmp_path / "browser-profile", desktop=True)
+    backend._desktop_browser = browser
+    backend._desktop_process = process
+
+    await backend.close()
+
+    cdp.send.assert_awaited_once_with("Browser.close")
+    process.wait.assert_awaited_once()
+    process.terminate.assert_not_called()
+    process.kill.assert_not_called()
+    browser.close.assert_awaited_once()

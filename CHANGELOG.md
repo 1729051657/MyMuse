@@ -4,6 +4,8 @@ All notable changes to nanoMuse. The format follows [Keep a Changelog](https://k
 
 ## [Unreleased]
 
+- Saved newly created cloud browser sessions before shutdown so a quick assistant restart keeps recent login cookies.
+
 - Added a complete cloud Chromium desktop to MyMuse, with native tabs, mouse and keyboard, browser shortcuts, full screen, file transfers and a Unicode clipboard. Kept each account's login profile and restored its tabs after restarts; handing back follows the selected tab, and a manual desktop hold pauses browser actions from every chat.
 
 - Added a direct browser button to the web chat and a wider takeover viewer that works before the first frame, refreshes older cards and preserves failed navigation input.
